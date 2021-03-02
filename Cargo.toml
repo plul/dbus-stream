@@ -1,0 +1,13 @@
+[package]
+name = "dbus-stream"
+version = "0.0.1"
+authors = ["Asger Juul Brunshøj <asgerbrunshoj@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+smol = "1.2.5"
+thiserror = "1.0"
+nix = "0.20"
+hex = "0.4.2"
+log = "0.4"
+nom = "6.1"
