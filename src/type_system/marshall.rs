@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
-use crate::type_system::Endianness;
 use crate::type_system::types::*;
+use crate::type_system::Endianness;
 
 // pub trait Marshall {
 //     fn marshall_be(&self) -> crate::Result<Vec<u8>> {
@@ -41,7 +41,6 @@ use crate::type_system::types::*;
 //         Ok(v)
 //     }
 // }
-
 
 // impl DBusByte {
 //     fn marshall_be(&self) -> crate::Result<Vec<u8>> {

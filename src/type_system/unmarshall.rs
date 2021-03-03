@@ -1,8 +1,7 @@
+use nom::bytes::complete::take;
+use nom::number::complete::be_u32;
+use nom::number::complete::le_u32;
 use nom::IResult;
-use nom::{
-    bytes::complete::take,
-    number::complete::{be_u32, le_u32},
-};
 
 use super::*;
 

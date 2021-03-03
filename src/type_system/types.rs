@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use super::marker::*;
+use super::signature::*;
 
 #[derive(Debug)]
 pub enum Type {
@@ -35,13 +35,13 @@ pub enum ContainerType {
 
 #[derive(Debug)]
 pub struct DBusArray {
-    pub item_type: TypeMark,
+    pub item_type: Signature,
     pub items: Vec<Type>,
 }
 
 #[derive(Debug)]
 pub struct DBusStruct {
-    pub fields: Vec<(TypeMark, Type)>,
+    pub fields: Vec<(Signature, Type)>,
 }
 
 #[derive(Debug)]
@@ -51,8 +51,8 @@ pub struct DBusVariant {
 
 #[derive(Debug)]
 pub struct DBusMap {
-    pub key_type: BasicTypeMark,
-    pub value_type: TypeMark,
+    pub key_type: BasicSignature,
+    pub value_type: Signature,
     pub map: HashMap<BasicType, Type>,
 }
 

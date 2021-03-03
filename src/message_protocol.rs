@@ -1,12 +1,14 @@
-pub mod header;
 pub mod body;
+pub mod header;
 
-use header::Header;
-use body::Body;
+use self::body::Body;
+use self::header::header_field;
+use self::header::Header;
+use crate::type_system::types::*;
 
 pub struct Message {
-    header: Header,
-    body: Body,
+    pub header: Header,
+    pub body: Body,
 }
 
 pub enum MessageType {
@@ -14,6 +16,14 @@ pub enum MessageType {
     MethodReturn,
     Error,
     Signal,
+}
+
+pub struct MethodCall {
+    pub destination: header_field::Destination,
+    pub path: header_field::Path,
+    pub interface: Option<header_field::Interface>,
+    pub member: header_field::Member,
+    pub body: Body,
 }
 
 impl MessageType {

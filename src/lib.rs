@@ -1,10 +1,9 @@
 //! Specification:
 //! https://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-marshaling
 
-
 pub(crate) mod connection;
-pub(crate) mod type_system;
 pub(crate) mod message_protocol;
+pub(crate) mod type_system;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
