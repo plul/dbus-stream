@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::convert::TryFrom;
 
 use nix::unistd::getuid;
 use nix::unistd::Uid;
@@ -12,7 +13,6 @@ use crate::message_protocol::header::header_field;
 use crate::message_protocol::header::header_field::HeaderField;
 use crate::message_protocol::header::Header;
 use crate::message_protocol::header::HeaderFlag;
-use crate::message_protocol::Message;
 use crate::message_protocol::MessageType;
 use crate::message_protocol::MethodCall;
 use crate::type_system::types::*;
@@ -68,13 +68,15 @@ impl Connection {
         Ok(conn)
     }
 
-    pub fn prepare_message(
+    pub fn marshall_message(
         &mut self,
         message_type: MessageType,
         flags: HashSet<HeaderFlag>,
         header_fields: Vec<HeaderField>,
         body: Body,
-    ) -> Message {
+    ) -> crate::Result<Vec<u8>> {
+        let marshalled_body: Vec<u8> = body.marshall_be();
+
         self.serial += 1;
         let serial = self.serial;
 
@@ -83,18 +85,25 @@ impl Connection {
             message_type,
             flags,
             major_protocol_version: crate::MAJOR_PROTOCOL_VERSION,
-            length_in_bytes_of_message_body: body.length_in_bytes(),
+            length_in_bytes_of_message_body: u32::try_from(marshalled_body.len())?,
             serial,
             header_fields,
         };
+        let marshalled_header: Vec<u8> = header.marshall();
 
-        Message { header, body }
+        // Header must be 8-aligned, but that is currently done in the marshall method of the header itself.
+        debug_assert_eq!(marshalled_header.len() % 8, 0);
+
+        let mut message: Vec<u8> = Vec::new();
+        message.extend(marshalled_header);
+        message.extend(marshalled_body);
+
+        Ok(message)
     }
 
-    async fn send_message(&mut self, message: Message) -> crate::Result<()> {
-        let marshalled = message.marshall();
-
-        self.writer.write_all(&marshalled).await?;
+    /// Send marshalled message.
+    async fn send_message(&mut self, message: &[u8]) -> crate::Result<()> {
+        self.writer.write_all(&message).await?;
         self.writer.flush().await?;
 
         Ok(())
@@ -117,14 +126,14 @@ impl Connection {
             header_fields.push(HeaderField::Interface(interface));
         }
 
-        let message: Message = self.prepare_message(
+        let message: Vec<u8> = self.marshall_message(
             MessageType::MethodCall,
             flags,
             header_fields,
             method_call.body,
-        );
+        )?;
 
-        self.send_message(message).await?;
+        self.send_message(&message).await?;
 
         Ok(())
     }
@@ -177,7 +186,7 @@ impl Connection {
             },
         };
 
-        let body = Body {};
+        let body = Body { arguments: vec![] };
 
         let method_call = MethodCall {
             destination,

@@ -8,11 +8,6 @@ use crate::type_system::types::*;
 use crate::type_system::*;
 
 
-pub struct Message {
-    pub header: Header,
-    pub body: Body,
-}
-
 pub enum MessageType {
     MethodCall,
     MethodReturn,
@@ -36,22 +31,6 @@ impl MessageType {
             Self::Error => 3,
             Self::Signal => 4,
         }
-    }
-}
-
-impl Message {
-    pub fn marshall(&self) -> Vec<u8> {
-        let mut v: Vec<u8> = Vec::new();
-
-        debug_assert!(self.header.endianness == Endianness::BigEndian, "For now we just support big endian marshalling");
-
-        let header = self.header.marshall_be();
-        v.extend(header);
-
-        let body = self.body.marshall_be();
-        v.extend(body);
-
-        v
     }
 }
 

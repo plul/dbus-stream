@@ -10,3 +10,12 @@ pub enum Endianness {
     BigEndian,
     LittleEndian,
 }
+
+impl Endianness {
+    pub fn ascii_code(&self) -> u8 {
+        match self {
+            Self::BigEndian => b'B',
+            Self::LittleEndian => b'l',
+        }
+    }
+}

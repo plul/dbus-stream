@@ -2,7 +2,7 @@
 ///
 /// When the library is finished, this file shall be removed.
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
     smol::block_on(async {

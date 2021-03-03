@@ -40,14 +40,14 @@ impl Header {
         let mut v: Vec<u8> = Vec::new();
 
         // 1st byte: Endianness
-        v.push(self.endianness.marshall());
+        v.push(self.endianness.ascii_code());
 
         // 2nd byte: Message Type
         v.push(self.message_type.decimal_value());
 
         // 3rd byte: Bitwise OR flags
         let mut flags = 0;
-        for flag in self.flags {
+        for flag in &self.flags {
             flags |= flag.hex_value();
         }
         v.push(flags);
@@ -65,7 +65,7 @@ impl Header {
 
         // Header fields:
         // A header field is a marshalled Array of Struct(Byte, Variant).
-        for header_field in self.header_fields {
+        for header_field in &self.header_fields {
             v.extend(header_field.marshall());
         }
 
