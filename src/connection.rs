@@ -91,6 +91,15 @@ impl Connection {
         Message { header, body }
     }
 
+    async fn send_message(&mut self, message: Message) -> crate::Result<()> {
+        let marshalled = message.marshall();
+
+        self.writer.write_all(&marshalled).await?;
+        self.writer.flush().await?;
+
+        Ok(())
+    }
+
     pub async fn call_method_expect_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
         todo!("not sure what the return type of this will be");
     }
@@ -115,48 +124,7 @@ impl Connection {
             method_call.body,
         );
 
-        // let mut header_serialized: Vec<u8> = {
-        //     let mut v: Vec<u8> = Vec::new();
-
-        //     v.push(endianness.serialize());
-        //     v.push(message_type.decimal_value());
-
-        //     let mut flags = 0;
-        //     for flag in flag_vec {
-        //         flags |= flag.hex_value();
-        //     }
-        //     v.push(flags);
-
-        //     v.push(crate::MAJOR_PROTOCOL_VERSION);
-
-        //     let length_in_bytes_of_body: u32 = u32::try_from(body_serialized.len())?;
-        //     v.extend_from_slice(&length_in_bytes_of_body.to_be_bytes());
-
-        //     v.extend_from_slice(&serial_of_this_message.to_be_bytes());
-
-        //     // A header field is an Array of Struct of (Byte, Variant).
-        //     for header_field in header_fields.vec {
-        //         v.extend_from_slice(&header_field.marshall_be()?);
-        //     }
-
-        //     v
-        // };
-
-        // // Header must be 8-aligned with null bytes
-        // while header_serialized.len() % 8 > 0 {
-        //     header_serialized.push(0);
-        // }
-
-        // self.writer.write_all(&header_serialized).await?;
-        // self.writer.flush().await?;
-
-        // loop {
-        //     let mut buf = vec![0; 1024];
-        //     let n = self.reader.read(&mut buf).await?;
-        //     if n > 0 {
-        //         dbg!(&buf[..n]);
-        //     }
-        // }
+        self.send_message(message).await?;
 
         Ok(())
     }

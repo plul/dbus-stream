@@ -5,6 +5,8 @@ pub(crate) mod connection;
 pub(crate) mod message_protocol;
 pub(crate) mod type_system;
 
+pub use connection::Connection;
+
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error(transparent)]

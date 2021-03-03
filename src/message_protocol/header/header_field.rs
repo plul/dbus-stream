@@ -63,4 +63,8 @@ impl HeaderField {
             Self::UnixFds(_) => 9,
         }
     }
+
+    pub fn marshall(&self) -> Vec<u8> {
+        todo!()
+    }
 }
