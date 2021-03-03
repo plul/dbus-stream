@@ -70,7 +70,7 @@ impl Header {
         }
 
         // Header must be 8-aligned with null bytes
-        while v.len() % 8 > 0 {
+        while v.len() % 8 != 0 {
             v.push(0);
         }
 

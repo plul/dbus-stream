@@ -7,7 +7,6 @@ use self::header::Header;
 use crate::type_system::types::*;
 use crate::type_system::*;
 
-
 pub enum MessageType {
     MethodCall,
     MethodReturn,

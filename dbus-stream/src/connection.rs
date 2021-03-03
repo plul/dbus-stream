@@ -75,7 +75,7 @@ impl Connection {
         header_fields: Vec<HeaderField>,
         body: Body,
     ) -> crate::Result<Vec<u8>> {
-        let marshalled_body: Vec<u8> = body.marshall_be();
+        let marshalled_body: Vec<u8> = body.marshall_be()?;
 
         self.serial += 1;
         let serial = self.serial;
@@ -109,11 +109,7 @@ impl Connection {
         Ok(())
     }
 
-    pub async fn call_method_expect_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
-        todo!("not sure what the return type of this will be");
-    }
-
-    pub async fn call_method_no_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
+    async fn call_method(&mut self, method_call: MethodCall) -> crate::Result<()> {
         let mut flags: HashSet<HeaderFlag> = HashSet::new();
         flags.insert(HeaderFlag::NoReplyExpected);
 
@@ -135,6 +131,17 @@ impl Connection {
 
         self.send_message(&message).await?;
 
+        Ok(())
+    }
+
+    pub async fn call_method_expect_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
+        self.call_method(method_call).await?;
+        todo!("not sure what the return type of this will be");
+        Ok(())
+    }
+
+    pub async fn call_method_no_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
+        self.call_method(method_call).await?;
         Ok(())
     }
 
@@ -196,7 +203,8 @@ impl Connection {
             body,
         };
 
-        self.call_method_expect_reply(method_call).await?;
+        let reply = self.call_method_expect_reply(method_call).await?;
+        todo!("What to do with the reply");
 
         Ok(())
     }
