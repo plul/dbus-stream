@@ -197,13 +197,16 @@ impl Connection {
     }
 
     async fn read_line(&mut self) -> crate::Result<String> {
-        let mut line = String::new();
+        let mut line: String = String::new();
 
-        todo!("use \r\n delimiter");
-        self.reader.read_line(&mut line).await?;
+        self.reader.read_line(&mut line).await;
+        debug_assert!(line.ends_with('\n'));
+
+        // In DBus, \r\n indicates a line ending, but messages are not expected to
+        // span multiple lines.
+        assert!(line.ends_with("\r\n"));
 
         // Pop the trailing "\r\n" from the line.
-        assert_eq!(&line[line.len() - 2..], "\r\n");
         line.pop();
         line.pop();
 
