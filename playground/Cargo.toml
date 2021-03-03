@@ -1,0 +1,11 @@
+[package]
+name = "playground"
+version = "0.1.0"
+authors = ["Asger Juul Brunshøj <asgerbrunshoj@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+dbus-stream = { path = "../dbus-stream" }
+anyhow = "1"
+smol = "1.2.5"
+env_logger = "0.8"
