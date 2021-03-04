@@ -212,24 +212,33 @@ impl Connection {
         Ok(())
     }
 
+    /// Authenticate with the DBus.
+    ///
+    /// This authenticates via user UID.
     async fn auth(&mut self) -> crate::Result<()> {
         // Send AUTH EXTERNAL with UID
-        self.write_line(format!("AUTH EXTERNAL {}", get_uid_as_hex()))
+        self.auth_write_line(format!("AUTH EXTERNAL {}", get_uid_as_hex()))
             .await?;
 
         // Expect to get OK from server
-        let line: String = self.read_line().await?;
+        let line: String = self.auth_read_line().await?;
         if !line.starts_with("OK") {
             return Err(crate::Error::FailedAuth);
         }
 
         // Send BEGIN command
-        self.write_line("BEGIN").await?;
+        self.auth_write_line("BEGIN").await?;
 
         Ok(())
     }
 
-    async fn write_line<T: AsRef<str>>(&mut self, line: T) -> crate::Result<()> {
+    /// Write one line to the stream, delimited by \r\n.
+    ///
+    /// The line ending \r\n is added inside this method, so should not be included in the
+    /// input.
+    ///
+    /// This is only used for the AUTH protocol, which is line based.
+    async fn auth_write_line<T: AsRef<str>>(&mut self, line: T) -> crate::Result<()> {
         let line: &str = line.as_ref();
 
         log::debug!("C: {}", line);
@@ -241,7 +250,12 @@ impl Connection {
         Ok(())
     }
 
-    async fn read_line(&mut self) -> crate::Result<String> {
+    /// Read one line from the stream, delimited by \r\n.
+    ///
+    /// The returned string does not contain the trailing \r\n.
+    ///
+    /// This is used only for the AUTH protocol, which is line based.
+    async fn auth_read_line(&mut self) -> crate::Result<String> {
         let mut line: String = String::new();
 
         self.reader.read_line(&mut line).await;
