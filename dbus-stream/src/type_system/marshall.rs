@@ -39,7 +39,7 @@ impl BasicType {
 impl ContainerType {
     pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         let vec: Vec<u8> = match self {
-            ContainerType::Array(inner) => inner.marshall_be(),
+            ContainerType::Array(inner) => inner.marshall_be()?,
             ContainerType::Struct(inner) => inner.marshall_be(),
             ContainerType::Variant(inner) => inner.marshall_be()?,
             ContainerType::Map(inner) => inner.marshall_be(),
@@ -195,11 +195,26 @@ impl DBusVariant {
 }
 
 impl DBusArray {
-    fn marshall_be(&self) -> Vec<u8> {
+    fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         // A UINT32 giving the length of the array data in bytes, followed by alignment
         // padding to the alignment boundary of the array element type, followed by each
         // array element.
-        todo!()
+
+        // Items are marshalled in sequence.
+        let mut marshalled_items: Vec<u8> = Vec::new();
+        for item in &self.items {
+            marshalled_items.extend(item.marshall_be()?);
+        }
+
+        // First item in the vec is the length in bytes of the coming items, but it isn't known yet
+        let mut v: Vec<u8> = Vec::new();
+        let length = marshalled_items.len();
+        let length = u32::try_from(length)?;
+        v.extend_from_slice(&length.to_be_bytes());
+
+        todo!("Second thing in the vec is alignment padding, to align with the alignment of the items of the array");
+
+        todo!("And then the actual items")
     }
 }
 
@@ -217,6 +232,6 @@ impl DBusMap {
 
 impl Signature {
     fn marshall(&self) -> Vec<u8> {
-        todo!();
+        todo!("Convert to DBusSignature first, and then marshall that");
     }
 }
