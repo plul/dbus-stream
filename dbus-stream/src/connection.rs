@@ -122,6 +122,9 @@ impl Connection {
             header_fields.push(HeaderField::Interface(interface));
         }
 
+        todo!("body signature should be added as a header field. but it kinda requires it to be marshalled first");
+        // HeaderField::Signature(method_call.body.signature()),
+
         let message: Vec<u8> = self.marshall_message(
             MessageType::MethodCall,
             flags,

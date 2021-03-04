@@ -51,7 +51,9 @@ pub struct DBusVariant {
 
 #[derive(Debug)]
 pub struct DBusMap {
-    pub key_type: BasicSignature,
+    /// Key must be a basic type, not a container type.
+    pub key_type: Signature,
+
     pub value_type: Signature,
     pub map: HashMap<BasicType, Type>,
 }
@@ -117,6 +119,6 @@ pub struct DBusSignature {
 }
 
 #[derive(Debug)]
-pub struct DBusUnixFileDescriptor(
-    // todo
-);
+pub struct DBusUnixFileDescriptor {
+    // Todo
+}

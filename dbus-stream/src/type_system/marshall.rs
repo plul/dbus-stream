@@ -1,12 +1,13 @@
 use std::convert::TryFrom;
 
+use super::signature::Signature;
 use crate::type_system::types::*;
 
 impl Type {
     pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         let vec: Vec<u8> = match self {
             Type::Basic(inner) => inner.marshall_be()?,
-            Type::Container(inner) => inner.marshall_be(),
+            Type::Container(inner) => inner.marshall_be()?,
         };
 
         Ok(vec)
@@ -36,13 +37,15 @@ impl BasicType {
 }
 
 impl ContainerType {
-    pub fn marshall_be(&self) -> Vec<u8> {
-        match self {
+    pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
+        let vec: Vec<u8> = match self {
             ContainerType::Array(inner) => inner.marshall_be(),
             ContainerType::Struct(inner) => inner.marshall_be(),
-            ContainerType::Variant(inner) => inner.marshall_be(),
+            ContainerType::Variant(inner) => inner.marshall_be()?,
             ContainerType::Map(inner) => inner.marshall_be(),
-        }
+        };
+
+        Ok(vec)
     }
 }
 
@@ -180,8 +183,14 @@ impl DBusUnixFileDescriptor {
 }
 
 impl DBusVariant {
-    fn marshall_be(&self) -> Vec<u8> {
-        todo!("signature, and then inner value");
+    fn marshall_be(&self) -> crate::Result<Vec<u8>> {
+        let signature = self.variant.signature().marshall();
+        let value = self.variant.marshall_be()?;
+
+        let mut v: Vec<u8> = Vec::new();
+        v.extend(signature);
+        v.extend(value);
+        Ok(v)
     }
 }
 
@@ -203,5 +212,11 @@ impl DBusStruct {
 impl DBusMap {
     fn marshall_be(&self) -> Vec<u8> {
         todo!()
+    }
+}
+
+impl Signature {
+    fn marshall(&self) -> Vec<u8> {
+        todo!();
     }
 }

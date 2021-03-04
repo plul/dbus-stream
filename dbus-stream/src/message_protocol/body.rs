@@ -1,3 +1,4 @@
+use crate::type_system::signature::Signature;
 use crate::type_system::types::*;
 
 pub struct Body {
@@ -11,5 +12,10 @@ impl Body {
             vec.extend(arg.marshall_be()?);
         }
         Ok(vec)
+    }
+
+    /// The body is made up of zero or more [single complete types](crate::type_system::signature::Signature).
+    pub fn signature(&self) -> Vec<Signature> {
+        self.arguments.iter().map(|arg| arg.signature()).collect()
     }
 }
