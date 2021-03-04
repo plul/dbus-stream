@@ -28,6 +28,8 @@ pub enum Signature {
         fields: Vec<Signature>,
     },
     Variant(Box<Signature>),
+
+    /// Map (Array of Dict Entries)
     Map {
         /// Key may only be a basic type, not a container type
         key: Box<Signature>,
@@ -53,9 +55,34 @@ impl Signature {
             Self::Signature => b'g',
             Self::UnixFileDescriptor => b'h',
             Self::Array(_) => todo!(),
-            Self::Struct { fields } => todo!(),
+            Self::Struct { fields: _ } => todo!(),
             Self::Variant(_) => b'v',
-            Self::Map { key, value } => todo!(),
+            Self::Map { key: _, value: _ } => todo!(),
+        }
+    }
+
+    /// Global boundary.
+    ///
+    /// For example, 4 byte values are aligned to a 4-byte boundary, calculated globally.
+    pub fn marshalling_boundary(&self) -> usize {
+        match self {
+            Self::Byte => 1,
+            Self::Boolean => 4,
+            Self::Int16 => 2,
+            Self::Uint16 => 2,
+            Self::Int32 => 4,
+            Self::Uint32 => 4,
+            Self::Int64 => 8,
+            Self::Uint64 => 8,
+            Self::Double => 8,
+            Self::String => 4,
+            Self::ObjectPath => 4,
+            Self::Signature => 1,
+            Self::UnixFileDescriptor => 4,
+            Self::Array(_) => 4,
+            Self::Struct { fields: _ } => 8,
+            Self::Variant(_) => 1,
+            Self::Map { key: _, value: _ } => 8,
         }
     }
 }

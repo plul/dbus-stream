@@ -49,6 +49,7 @@ pub struct DBusVariant {
     pub variant: Box<Type>,
 }
 
+/// Map (Array of Dict Entries)
 #[derive(Debug)]
 pub struct DBusMap {
     /// Key must be a basic type, not a container type.
@@ -115,7 +116,8 @@ pub struct DBusObjectPath {
 
 #[derive(Debug)]
 pub struct DBusSignature {
-    pub dbus_string: DBusString,
+    /// The bytes containing the signature as ASCII.
+    pub vec: Vec<u8>,
 }
 
 #[derive(Debug)]

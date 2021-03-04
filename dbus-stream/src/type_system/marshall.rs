@@ -68,26 +68,6 @@ impl ContainerType {
 //     }
 // }
 
-// // DBus Struct with two fields
-// impl<T, U> (T, U)
-// where
-//     T: DBusType,
-//     U: DBusType,
-// {
-//     fn marshall_be(&self) -> crate::Result<Vec<u8>> {
-//         let mut v = Vec::new();
-
-//         v.extend_from_slice(&self.0.marshall_be()?);
-//         v.extend_from_slice(&self.1.marshall_be()?);
-
-//         while v.len() % 8 != 0 {
-//             v.push(0x00);
-//         }
-
-//         Ok(v)
-//     }
-// }
-
 impl DBusByte {
     fn marshall(&self) -> u8 {
         self.u8
@@ -153,10 +133,9 @@ impl DBusString {
 
         v.extend_from_slice(&length.to_be_bytes());
         v.extend(self.string.bytes());
+
+        // Terminating null byte.
         v.push(0x00);
-        while v.len() % 4 != 0 {
-            v.push(0x00);
-        }
 
         Ok(v)
     }
@@ -170,9 +149,25 @@ impl DBusObjectPath {
 }
 
 impl DBusSignature {
+    /// Marshall big-endian.
+    ///
+    /// DBusSignature marshalls the same way as DBusString, except length is on a single
+    /// byte.
     fn marshall_be(&self) -> crate::Result<Vec<u8>> {
-        // Marshalls the same way as DBusString.
-        self.dbus_string.marshall_be()
+        let mut v = Vec::new();
+
+        let length = self.vec.len();
+        let length = u8::try_from(length)?;
+
+        v.push(length);
+        v.extend(&self.vec);
+
+        // Terminating null byte.
+        v.push(0x00);
+
+        todo!("enforce max length of signature is 255 (bytes). But remember, this is only a single complete type being marshalled in this function. Somewhere else the entire signature of bodies is being composed.");
+
+        Ok(v)
     }
 }
 
@@ -196,25 +191,28 @@ impl DBusVariant {
 
 impl DBusArray {
     fn marshall_be(&self) -> crate::Result<Vec<u8>> {
-        // A UINT32 giving the length of the array data in bytes, followed by alignment
-        // padding to the alignment boundary of the array element type, followed by each
-        // array element.
-
         // Items are marshalled in sequence.
         let mut marshalled_items: Vec<u8> = Vec::new();
         for item in &self.items {
             marshalled_items.extend(item.marshall_be()?);
         }
 
-        // First item in the vec is the length in bytes of the coming items, but it isn't known yet
+        // First thing added to the vec is the length in bytes of the coming items.
         let mut v: Vec<u8> = Vec::new();
         let length = marshalled_items.len();
         let length = u32::try_from(length)?;
         v.extend_from_slice(&length.to_be_bytes());
 
-        todo!("Second thing in the vec is alignment padding, to align with the alignment of the items of the array");
+        // Second thing in the vec is alignment padding, to align with the boundary of the items of the array.
+        let boundary = self.item_type.marshalling_boundary();
+        while v.len() % boundary != 0 {
+            v.push(0);
+        }
 
-        todo!("And then the actual items")
+        // Third, we add the actual items.
+        v.extend(marshalled_items);
+
+        Ok(v)
     }
 }
 
@@ -232,6 +230,73 @@ impl DBusMap {
 
 impl Signature {
     fn marshall(&self) -> Vec<u8> {
+        let mut v: Vec<u8> = Vec::new();
+
+        match self {
+            Self::Byte => {
+                v.push(b'y');
+            }
+            Self::Boolean => {
+                v.push(b'b');
+            }
+            Self::Int16 => {
+                v.push(b'n');
+            }
+            Self::Uint16 => {
+                v.push(b'q');
+            }
+            Self::Int32 => {
+                v.push(b'i');
+            }
+            Self::Uint32 => {
+                v.push(b'u');
+            }
+            Self::Int64 => {
+                v.push(b'x');
+            }
+            Self::Uint64 => {
+                v.push(b't');
+            }
+            Self::Double => {
+                v.push(b'd');
+            }
+            Self::String => {
+                v.push(b's');
+            }
+            Self::ObjectPath => {
+                v.push(b'o');
+            }
+            Self::Signature => {
+                v.push(b'g');
+            }
+            Self::UnixFileDescriptor => {
+                v.push(b'h');
+            }
+            Self::Array(inner) => {
+                v.push(b'a');
+                v.extend(inner.marshall());
+            }
+            Self::Struct { fields } => {
+                v.push(b'(');
+                for field in fields {
+                    v.extend(field.marshall());
+                }
+                v.push(b')');
+            }
+            Self::Variant(_) => {
+                v.push(b'v');
+            }
+            Self::Map { key, value } => {
+                v.push(b'a');
+                v.push(b'{');
+                v.extend(key.marshall());
+                v.extend(value.marshall());
+                v.push(b'}');
+            }
+        }
+
+        todo!("enforce max depths");
+
         todo!("Convert to DBusSignature first, and then marshall that");
     }
 }
