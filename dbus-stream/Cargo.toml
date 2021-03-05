@@ -7,7 +7,9 @@ edition = "2018"
 [dependencies]
 smol = "1.2.5"
 thiserror = "1.0"
-nix = "0.20"
 hex = "0.4.2"
 log = "0.4"
 nom = "6.1"
+
+[target.'cfg(unix)'.dependencies]
+nix = "0.20"

@@ -1,8 +1,6 @@
 use std::collections::HashSet;
 use std::convert::TryFrom;
 
-use nix::unistd::getuid;
-use nix::unistd::Uid;
 use smol::io::BufReader;
 use smol::io::BufWriter;
 use smol::net::unix::UnixStream;
@@ -25,24 +23,15 @@ pub struct Connection {
     writer: BufWriter<UnixStream>,
 }
 
-/// Get current user UID as hex.
-fn get_uid_as_hex() -> String {
-    // Get UID
-    let uid: Uid = getuid();
-    let uid: u32 = uid.as_raw();
-    // Convert it to a string, "1000" for example.
-    let uid: String = format!("{}", uid);
-    // Encode the "1000" string as lowercase hex, fx "31303030", which is the format
-    // that the DBus auth protocol wants.
-    let uid: String = hex::encode(uid);
-
-    uid
-}
-
 impl Connection {
     pub async fn new_system() -> crate::Result<Self> {
+        log::info!("Connecting to system DBus.");
+
+        if cfg!(windows) {
+            todo!("On Windows we some other way than a UnixStream to connect.");
+        }
+
         // TODO check DBUS_SYSTEM_BUS_ADDRESS env variable, if it is set, connect to that instead.
-        log::info!("Connecting to dbus socket.");
         let stream = UnixStream::connect("/var/run/dbus/system_bus_socket").await?;
 
         // Split up into buffered read/write.
@@ -212,12 +201,31 @@ impl Connection {
         Ok(())
     }
 
+    /// Get AUTH EXTERNAL parameter for unix: UID as hex.
+    #[cfg(unix)]
+    fn get_auth_external_param() -> String {
+        // Get UID
+        let uid: nix::unistd::Uid = nix::unistd::getuid();
+        let uid: u32 = uid.as_raw();
+        // Convert it to a string, "1000" for example.
+        let uid: String = format!("{}", uid);
+        // Encode the "1000" string as lowercase hex, fx "31303030", which is the format
+        // that the DBus auth protocol wants.
+        let uid: String = hex::encode(uid);
+
+        uid
+    }
+
+    /// Get AUTH EXTERNAL parameter for windows: SID as hex.
+    #[cfg(windows)]
+    fn get_auth_external_param() -> String {
+        todo!("Dani: Here, return Windows SID as hex for use with AUTH. Take a look at get_uid_as_hex for inspiration");
+    }
+
     /// Authenticate with the DBus.
-    ///
-    /// This authenticates via user UID.
     async fn auth(&mut self) -> crate::Result<()> {
-        // Send AUTH EXTERNAL with UID
-        self.auth_write_line(format!("AUTH EXTERNAL {}", get_uid_as_hex()))
+        // Send AUTH EXTERNAL
+        self.auth_write_line(format!("AUTH EXTERNAL {}", Self::get_auth_external_param()))
             .await?;
 
         // Expect to get OK from server
@@ -258,7 +266,7 @@ impl Connection {
     async fn auth_read_line(&mut self) -> crate::Result<String> {
         let mut line: String = String::new();
 
-        self.reader.read_line(&mut line).await;
+        self.reader.read_line(&mut line).await?;
         debug_assert!(line.ends_with('\n'));
 
         // In DBus, \r\n indicates a line ending, but messages are not expected to
