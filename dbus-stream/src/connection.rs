@@ -3,7 +3,6 @@ use std::convert::TryFrom;
 
 use smol::io::BufReader;
 use smol::io::BufWriter;
-use smol::net::unix::UnixStream;
 use smol::prelude::*;
 
 use crate::message_protocol::body::Body;
@@ -16,33 +15,44 @@ use crate::message_protocol::MethodCall;
 use crate::type_system::types::*;
 use crate::type_system::*;
 
-#[derive(Debug)]
 pub struct Connection {
     serial: u32,
-    reader: BufReader<UnixStream>,
-    writer: BufWriter<UnixStream>,
+    reader: BufReader<Box<dyn AsyncRead + Unpin>>,
+    writer: BufWriter<Box<dyn AsyncWrite + Unpin>>,
 }
 
 impl Connection {
+    #[cfg(windows)]
+    async fn connect_to_system_bus() -> crate::Result<Connection> {
+        todo!("On Windows we need some other way than a UnixStream to connect.");
+    }
+
+    #[cfg(unix)]
+    async fn connect_to_system_bus() -> crate::Result<Connection> {
+        use smol::net::unix::UnixStream;
+
+        // TODO check DBUS_SYSTEM_BUS_ADDRESS env variable, if it is set, connect to that instead.
+        let address = "/var/run/dbus/system_bus_socket";
+
+        let stream = UnixStream::connect(address).await?;
+
+        // Split up into buffered read/write.
+        let reader: Box<dyn AsyncRead + Unpin> = Box::new(stream.clone());
+        let writer: Box<dyn AsyncWrite + Unpin> = Box::new(stream);
+
+        let conn = Connection {
+            reader: BufReader::new(reader),
+            writer: BufWriter::new(writer),
+            serial: 0,
+        };
+
+        Ok(conn)
+    }
+
     pub async fn new_system() -> crate::Result<Self> {
         log::info!("Connecting to system DBus.");
 
-        if cfg!(windows) {
-            todo!("On Windows we some other way than a UnixStream to connect.");
-        }
-
-        // TODO check DBUS_SYSTEM_BUS_ADDRESS env variable, if it is set, connect to that instead.
-        let stream = UnixStream::connect("/var/run/dbus/system_bus_socket").await?;
-
-        // Split up into buffered read/write.
-        let reader = BufReader::new(stream.clone());
-        let writer = BufWriter::new(stream);
-
-        let mut conn = Connection {
-            reader,
-            writer,
-            serial: 0,
-        };
+        let mut conn = Self::connect_to_system_bus().await?;
 
         // Spec for some reason requires that the first thing we do is to send a null byte.
         log::debug!("Writing null byte.");
