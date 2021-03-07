@@ -13,3 +13,7 @@ nom = "6.1"
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.20"
+
+[target.'cfg(windows)'.dependencies]
+winapi = "0.3.5"
+windows-acl = "0.3.0"
