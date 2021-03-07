@@ -22,33 +22,6 @@ pub struct Connection {
 }
 
 impl Connection {
-    #[cfg(windows)]
-    async fn connect_to_system_bus() -> crate::Result<Connection> {
-        todo!("On Windows we need some other way than a UnixStream to connect.");
-    }
-
-    #[cfg(unix)]
-    async fn connect_to_system_bus() -> crate::Result<Connection> {
-        use smol::net::unix::UnixStream;
-
-        // TODO check DBUS_SYSTEM_BUS_ADDRESS env variable, if it is set, connect to that instead.
-        let address = "/var/run/dbus/system_bus_socket";
-
-        let stream = UnixStream::connect(address).await?;
-
-        // Split up into buffered read/write.
-        let reader: Box<dyn AsyncRead + Unpin> = Box::new(stream.clone());
-        let writer: Box<dyn AsyncWrite + Unpin> = Box::new(stream);
-
-        let conn = Connection {
-            reader: BufReader::new(reader),
-            writer: BufWriter::new(writer),
-            serial: 0,
-        };
-
-        Ok(conn)
-    }
-
     pub async fn new_system() -> crate::Result<Self> {
         log::info!("Connecting to system DBus.");
 
@@ -63,6 +36,53 @@ impl Connection {
 
         log::debug!("Saying hello.");
         conn.say_hello().await?;
+
+        Ok(conn)
+    }
+
+    fn new<R, W>(reader: R, writer: W) -> Self
+    where
+        R: AsyncRead + Unpin + 'static,
+        W: AsyncWrite + Unpin + 'static,
+    {
+        Connection {
+            reader: BufReader::new(Box::new(reader)),
+            writer: BufWriter::new(Box::new(writer)),
+            serial: 0,
+        }
+    }
+
+    #[cfg(windows)]
+    async fn connect_to_system_bus() -> crate::Result<Connection> {
+        use smol::net::TcpStream;
+
+        let address = todo!("address of DBus system bus on Windows in the format of ip and port number, for example: 127.0.0.1:8080");
+
+        let stream = TcpStream::connect(address).await?;
+
+        // Split up into buffered read/write.
+        let reader = stream.clone();
+        let writer = stream;
+
+        let conn = Self::new(reader, writer);
+
+        Ok(conn)
+    }
+
+    #[cfg(unix)]
+    async fn connect_to_system_bus() -> crate::Result<Connection> {
+        use smol::net::unix::UnixStream;
+
+        // TODO check DBUS_SYSTEM_BUS_ADDRESS env variable, if it is set, connect to that instead.
+        let address = "/var/run/dbus/system_bus_socket";
+
+        let stream = UnixStream::connect(address).await?;
+
+        // Split up into buffered read/write.
+        let reader = stream.clone();
+        let writer = stream;
+
+        let conn = Self::new(reader, writer);
 
         Ok(conn)
     }
