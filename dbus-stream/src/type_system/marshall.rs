@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 
-use super::signature::Signature;
+use super::signature::SingleCompleteTypeSignature;
 use crate::type_system::types::*;
 
 impl Type {
@@ -228,7 +228,7 @@ impl DBusMap {
     }
 }
 
-impl Signature {
+impl SingleCompleteTypeSignature {
     fn marshall(&self) -> Vec<u8> {
         let mut v: Vec<u8> = Vec::new();
 

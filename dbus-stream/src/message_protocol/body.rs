@@ -14,8 +14,8 @@ impl Body {
         Ok(vec)
     }
 
-    /// The body is made up of zero or more [single complete types](crate::type_system::signature::Signature).
-    pub fn signature(&self) -> Vec<Signature> {
+    /// The body is made up of zero or more [single complete types](crate::type_system::signature::SingleCompleteTypeSignature).
+    pub fn signature(&self) -> Signature {
         self.arguments.iter().map(|arg| arg.signature()).collect()
     }
 }

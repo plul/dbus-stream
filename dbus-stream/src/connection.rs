@@ -208,7 +208,7 @@ impl Connection {
     async fn say_hello(&mut self) -> crate::Result<()> {
         let destination = DBusString::new("org.freedesktop.DBus")?;
         let path = DBusObjectPath::new("org/freedesktop/DBus")?;
-        let interface =  DBusString::new("org.freedesktop.DBus")?;
+        let interface = DBusString::new("org.freedesktop.DBus")?;
         let member = DBusString::new("Hello")?;
 
         let body = Body { arguments: vec![] };

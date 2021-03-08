@@ -3,13 +3,15 @@ use super::BasicType;
 use super::ContainerType;
 use super::Type;
 
+pub type Signature = Vec<SingleCompleteTypeSignature>;
+
 trait ToSignature {
-    fn signature(&self) -> Signature;
+    fn signature(&self) -> SingleCompleteTypeSignature;
 }
 
 /// Signature for a "Single Complete Type".
 #[derive(Debug, Clone)]
-pub enum Signature {
+pub enum SingleCompleteTypeSignature {
     Byte,
     Boolean,
     Int16,
@@ -23,22 +25,22 @@ pub enum Signature {
     ObjectPath,
     Signature,
     UnixFileDescriptor,
-    Array(Box<Signature>),
+    Array(Box<SingleCompleteTypeSignature>),
     Struct {
-        fields: Vec<Signature>,
+        fields: Signature,
     },
-    Variant(Box<Signature>),
+    Variant(Box<SingleCompleteTypeSignature>),
 
     /// Map (Array of Dict Entries)
     Map {
         /// Key may only be a basic type, not a container type
-        key: Box<Signature>,
+        key: Box<SingleCompleteTypeSignature>,
 
-        value: Box<Signature>,
+        value: Box<SingleCompleteTypeSignature>,
     },
 }
 
-impl Signature {
+impl SingleCompleteTypeSignature {
     pub fn code(&self) -> u8 {
         match self {
             Self::Byte => b'y',
@@ -89,38 +91,38 @@ impl Signature {
 
 impl Type {
     /// Return signature for this type.
-    pub fn signature(&self) -> Signature {
+    pub fn signature(&self) -> SingleCompleteTypeSignature {
         match self {
-            Type::Basic(inner) => Signature::from(inner.signature()),
-            Type::Container(inner) => Signature::from(inner.signature()),
+            Type::Basic(inner) => SingleCompleteTypeSignature::from(inner.signature()),
+            Type::Container(inner) => SingleCompleteTypeSignature::from(inner.signature()),
         }
     }
 }
 
 impl ToSignature for BasicType {
     /// Return signature for this basic type.
-    fn signature(&self) -> Signature {
+    fn signature(&self) -> SingleCompleteTypeSignature {
         match self {
-            BasicType::Byte(_) => Signature::Byte,
-            BasicType::Boolean(_) => Signature::Boolean,
-            BasicType::Int16(_) => Signature::Int16,
-            BasicType::Uint16(_) => Signature::Uint16,
-            BasicType::Int32(_) => Signature::Int32,
-            BasicType::Uint32(_) => Signature::Uint32,
-            BasicType::Int64(_) => Signature::Int64,
-            BasicType::Uint64(_) => Signature::Uint64,
-            BasicType::Double(_) => Signature::Double,
-            BasicType::String(_) => Signature::String,
-            BasicType::ObjectPath(_) => Signature::ObjectPath,
-            BasicType::Signature(_) => Signature::Signature,
-            BasicType::UnixFileDescriptor(_) => Signature::UnixFileDescriptor,
+            BasicType::Byte(_) => SingleCompleteTypeSignature::Byte,
+            BasicType::Boolean(_) => SingleCompleteTypeSignature::Boolean,
+            BasicType::Int16(_) => SingleCompleteTypeSignature::Int16,
+            BasicType::Uint16(_) => SingleCompleteTypeSignature::Uint16,
+            BasicType::Int32(_) => SingleCompleteTypeSignature::Int32,
+            BasicType::Uint32(_) => SingleCompleteTypeSignature::Uint32,
+            BasicType::Int64(_) => SingleCompleteTypeSignature::Int64,
+            BasicType::Uint64(_) => SingleCompleteTypeSignature::Uint64,
+            BasicType::Double(_) => SingleCompleteTypeSignature::Double,
+            BasicType::String(_) => SingleCompleteTypeSignature::String,
+            BasicType::ObjectPath(_) => SingleCompleteTypeSignature::ObjectPath,
+            BasicType::Signature(_) => SingleCompleteTypeSignature::Signature,
+            BasicType::UnixFileDescriptor(_) => SingleCompleteTypeSignature::UnixFileDescriptor,
         }
     }
 }
 
 impl ToSignature for ContainerType {
     /// Return signature for this container type.
-    fn signature(&self) -> Signature {
+    fn signature(&self) -> SingleCompleteTypeSignature {
         match self {
             ContainerType::Array(dbus_array) => todo!(),
             ContainerType::Struct(dbus_struct) => todo!(),
@@ -131,92 +133,92 @@ impl ToSignature for ContainerType {
 }
 
 impl ToSignature for DBusByte {
-    fn signature(&self) -> Signature {
-        Signature::Byte
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Byte
     }
 }
 
 impl ToSignature for DBusBoolean {
-    fn signature(&self) -> Signature {
-        Signature::Boolean
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Boolean
     }
 }
 
 impl ToSignature for DBusInt16 {
-    fn signature(&self) -> Signature {
-        Signature::Int16
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Int16
     }
 }
 
 impl ToSignature for DBusUint16 {
-    fn signature(&self) -> Signature {
-        Signature::Uint16
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Uint16
     }
 }
 
 impl ToSignature for DBusInt32 {
-    fn signature(&self) -> Signature {
-        Signature::Int32
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Int32
     }
 }
 
 impl ToSignature for DBusUint32 {
-    fn signature(&self) -> Signature {
-        Signature::Uint32
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Uint32
     }
 }
 
 impl ToSignature for DBusInt64 {
-    fn signature(&self) -> Signature {
-        Signature::Int64
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Int64
     }
 }
 
 impl ToSignature for DBusUint64 {
-    fn signature(&self) -> Signature {
-        Signature::Uint64
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Uint64
     }
 }
 
 impl ToSignature for DBusDouble {
-    fn signature(&self) -> Signature {
-        Signature::Double
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Double
     }
 }
 
 impl ToSignature for DBusString {
-    fn signature(&self) -> Signature {
-        Signature::String
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::String
     }
 }
 
 impl ToSignature for DBusObjectPath {
-    fn signature(&self) -> Signature {
-        Signature::ObjectPath
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::ObjectPath
     }
 }
 
 impl ToSignature for DBusSignature {
-    fn signature(&self) -> Signature {
-        Signature::Signature
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Signature
     }
 }
 
 impl ToSignature for DBusUnixFileDescriptor {
-    fn signature(&self) -> Signature {
-        Signature::UnixFileDescriptor
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::UnixFileDescriptor
     }
 }
 
 impl ToSignature for DBusArray {
-    fn signature(&self) -> Signature {
-        Signature::Array(Box::new(self.item_type.clone()))
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Array(Box::new(self.item_type.clone()))
     }
 }
 
 impl ToSignature for DBusStruct {
-    fn signature(&self) -> Signature {
-        Signature::Struct {
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Struct {
             fields: self
                 .fields
                 .iter()
@@ -227,14 +229,14 @@ impl ToSignature for DBusStruct {
 }
 
 impl ToSignature for DBusVariant {
-    fn signature(&self) -> Signature {
-        Signature::Variant(Box::new(self.variant.signature()))
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Variant(Box::new(self.variant.signature()))
     }
 }
 
 impl ToSignature for DBusMap {
-    fn signature(&self) -> Signature {
-        Signature::Map {
+    fn signature(&self) -> SingleCompleteTypeSignature {
+        SingleCompleteTypeSignature::Map {
             key: Box::new(self.key_type.clone()),
             value: Box::new(self.value_type.clone()),
         }

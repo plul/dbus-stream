@@ -35,13 +35,13 @@ pub enum ContainerType {
 
 #[derive(Debug)]
 pub struct DBusArray {
-    pub item_type: Signature,
+    pub item_type: SingleCompleteTypeSignature,
     pub items: Vec<Type>,
 }
 
 #[derive(Debug)]
 pub struct DBusStruct {
-    pub fields: Vec<(Signature, Type)>,
+    pub fields: Vec<(SingleCompleteTypeSignature, Type)>,
 }
 
 #[derive(Debug)]
@@ -53,9 +53,9 @@ pub struct DBusVariant {
 #[derive(Debug)]
 pub struct DBusMap {
     /// Key must be a basic type, not a container type.
-    pub key_type: Signature,
+    pub key_type: SingleCompleteTypeSignature,
 
-    pub value_type: Signature,
+    pub value_type: SingleCompleteTypeSignature,
     pub map: HashMap<BasicType, Type>,
 }
 
@@ -142,7 +142,9 @@ impl DBusObjectPath {
         T: Into<String>,
     {
         // TODO: As soon as there are more stringent checking done for this type, this may need to change.
-        let s = Self { dbus_string: DBusString::new(t)? };
+        let s = Self {
+            dbus_string: DBusString::new(t)?,
+        };
         Ok(s)
     }
 }
