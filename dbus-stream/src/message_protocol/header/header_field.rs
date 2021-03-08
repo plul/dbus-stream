@@ -1,52 +1,16 @@
+use crate::type_system::signature::Signature;
 use crate::type_system::types::*;
-use crate::type_system::*;
 
 pub enum HeaderField {
-    Path(Path),
-    Interface(Interface),
-    Member(Member),
-    ErrorName(ErrorName),
-    ReplySerial(ReplySerial),
-    Destination(Destination),
-    Sender(Sender),
+    Path(DBusObjectPath),
+    Interface(DBusString),
+    Member(DBusString),
+    ErrorName(DBusString),
+    ReplySerial(DBusUint32),
+    Destination(DBusString),
+    Sender(DBusString),
     Signature(Signature),
-    UnixFds(UnixFds),
-}
-
-pub struct Path {
-    pub dbus_object_path: DBusObjectPath,
-}
-
-pub struct Interface {
-    pub dbus_string: DBusString,
-}
-
-pub struct Member {
-    pub dbus_string: DBusString,
-}
-
-pub struct ErrorName {
-    pub dbus_string: DBusString,
-}
-
-pub struct ReplySerial {
-    pub dbus_uint32: DBusUint32,
-}
-
-pub struct Destination {
-    pub dbus_string: DBusString,
-}
-
-pub struct Sender {
-    pub dbus_string: DBusString,
-}
-
-pub struct Signature {
-    pub dbus_signature: DBusSignature,
-}
-
-pub struct UnixFds {
-    pub dbus_uint32: DBusUint32,
+    UnixFds(DBusUint32),
 }
 
 impl HeaderField {

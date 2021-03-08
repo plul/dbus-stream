@@ -6,7 +6,6 @@ use smol::io::BufWriter;
 use smol::prelude::*;
 
 use crate::message_protocol::body::Body;
-use crate::message_protocol::header::header_field;
 use crate::message_protocol::header::header_field::HeaderField;
 use crate::message_protocol::header::Header;
 use crate::message_protocol::header::HeaderFlag;
@@ -16,7 +15,10 @@ use crate::type_system::types::*;
 use crate::type_system::*;
 
 pub struct Connection {
+    /// Serial that is unique for each message, so replies can be identified.
+    /// Increment by one for each sent message to keep it unique.
     serial: u32,
+
     reader: BufReader<Box<dyn AsyncRead + Unpin>>,
     writer: BufWriter<Box<dyn AsyncWrite + Unpin>>,
 }
@@ -87,7 +89,7 @@ impl Connection {
         Ok(conn)
     }
 
-    pub fn marshall_message(
+    fn marshall_message(
         &mut self,
         message_type: MessageType,
         flags: HashSet<HeaderFlag>,
@@ -128,21 +130,34 @@ impl Connection {
         Ok(())
     }
 
-    async fn call_method(&mut self, method_call: MethodCall) -> crate::Result<()> {
+    async fn call_method(
+        &mut self,
+        method_call: MethodCall,
+        expect_reply: bool,
+    ) -> crate::Result<()> {
         let mut flags: HashSet<HeaderFlag> = HashSet::new();
-        flags.insert(HeaderFlag::NoReplyExpected);
 
+        if !expect_reply {
+            flags.insert(HeaderFlag::NoReplyExpected);
+        }
+
+        // Path and Member are mandatory
         let mut header_fields: Vec<HeaderField> = vec![
             HeaderField::Path(method_call.path),
-            HeaderField::Destination(method_call.destination),
             HeaderField::Member(method_call.member),
         ];
+
+        // Destination is optional
+        if let Some(destination) = method_call.destination {
+            header_fields.push(HeaderField::Destination(destination));
+        }
+
+        // Interface is optional
         if let Some(interface) = method_call.interface {
             header_fields.push(HeaderField::Interface(interface));
         }
 
-        todo!("body signature should be added as a header field. but it kinda requires it to be marshalled first");
-        // HeaderField::Signature(method_call.body.signature()),
+        HeaderField::Signature(method_call.body.signature());
 
         let message: Vec<u8> = self.marshall_message(
             MessageType::MethodCall,
@@ -156,14 +171,16 @@ impl Connection {
         Ok(())
     }
 
+    /// DBus method call, with reply.
     pub async fn call_method_expect_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
-        self.call_method(method_call).await?;
+        self.call_method(method_call, true).await?;
         todo!("not sure what the return type of this will be");
         Ok(())
     }
 
+    /// DBus method call, no reply.
     pub async fn call_method_no_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
-        self.call_method(method_call).await?;
+        self.call_method(method_call, false).await?;
         Ok(())
     }
 
@@ -187,38 +204,17 @@ impl Connection {
     //     Ok(())
     // }
 
-    /// Spec requires us to say hello.
+    /// Spec requires us to say hello on new connections immediately after AUTH.
     async fn say_hello(&mut self) -> crate::Result<()> {
-        let destination = header_field::Destination {
-            dbus_string: DBusString {
-                string: String::from("org.freedesktop.DBus"),
-            },
-        };
-
-        let path = header_field::Path {
-            dbus_object_path: DBusObjectPath {
-                dbus_string: DBusString {
-                    string: String::from("org/freedesktop/DBus"),
-                },
-            },
-        };
-
-        let interface = header_field::Interface {
-            dbus_string: DBusString {
-                string: String::from("org.freedesktop.DBus"),
-            },
-        };
-
-        let member = header_field::Member {
-            dbus_string: DBusString {
-                string: String::from("Hello"),
-            },
-        };
+        let destination = DBusString::new("org.freedesktop.DBus")?;
+        let path = DBusObjectPath::new("org/freedesktop/DBus")?;
+        let interface = DBusString::new("org.freedesktop.DBus")?;
+        let member = DBusString::new("Hello")?;
 
         let body = Body { arguments: vec![] };
 
         let method_call = MethodCall {
-            destination,
+            destination: Some(destination),
             path,
             interface: Some(interface),
             member,
@@ -226,7 +222,7 @@ impl Connection {
         };
 
         let reply = self.call_method_expect_reply(method_call).await?;
-        todo!("What to do with the reply");
+        todo!("What to do with the reply?");
 
         Ok(())
     }
