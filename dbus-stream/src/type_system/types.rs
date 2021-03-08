@@ -124,3 +124,25 @@ pub struct DBusSignature {
 pub struct DBusUnixFileDescriptor {
     // Todo
 }
+
+impl DBusString {
+    pub fn new<T>(t: T) -> crate::Result<Self>
+    where
+        T: Into<String>,
+    {
+        // TODO: As soon as there are more stringent checking done for this type, this may need to change.
+        let s = Self { string: t.into() };
+        Ok(s)
+    }
+}
+
+impl DBusObjectPath {
+    pub fn new<T>(t: T) -> crate::Result<Self>
+    where
+        T: Into<String>,
+    {
+        // TODO: As soon as there are more stringent checking done for this type, this may need to change.
+        let s = Self { dbus_string: DBusString::new(t)? };
+        Ok(s)
+    }
+}

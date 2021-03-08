@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use self::header_field::HeaderField;
 use super::MessageType;
-use crate::type_system::types::*;
 use crate::type_system::*;
 
 pub mod header_field;

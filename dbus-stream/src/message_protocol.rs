@@ -2,10 +2,7 @@ pub mod body;
 pub mod header;
 
 use self::body::Body;
-use self::header::header_field;
-use self::header::Header;
 use crate::type_system::types::*;
-use crate::type_system::*;
 
 pub enum MessageType {
     MethodCall,
@@ -15,10 +12,19 @@ pub enum MessageType {
 }
 
 pub struct MethodCall {
-    pub destination: header_field::Destination,
-    pub path: header_field::Path,
-    pub interface: Option<header_field::Interface>,
-    pub member: header_field::Member,
+    /// The name of the connection this message is intended for.
+    pub destination: Option<DBusString>,
+
+    /// The object to send a call to.
+    pub path: DBusObjectPath,
+
+    /// The interface to invoke a method call on.
+    pub interface: Option<DBusString>,
+
+    /// The member name (the name of the method).
+    pub member: DBusString,
+
+    /// Method arguments.
     pub body: Body,
 }
 

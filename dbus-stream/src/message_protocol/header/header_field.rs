@@ -1,52 +1,19 @@
 use crate::type_system::types::*;
-use crate::type_system::*;
+use crate::type_system::signature::Signature;
 
 pub enum HeaderField {
-    Path(Path),
-    Interface(Interface),
-    Member(Member),
-    ErrorName(ErrorName),
-    ReplySerial(ReplySerial),
-    Destination(Destination),
-    Sender(Sender),
-    Signature(Signature),
-    UnixFds(UnixFds),
-}
+    Path(DBusObjectPath),
+    Interface(DBusString),
+    Member(DBusString),
+    ErrorName(DBusString),
+    ReplySerial(DBusUint32),
+    Destination(DBusString),
+    Sender(DBusString),
 
-pub struct Path {
-    pub dbus_object_path: DBusObjectPath,
-}
+    /// A vec of signatures, because the body is made up of zero or more "single complete type"s.
+    Signature(Vec<Signature>),
 
-pub struct Interface {
-    pub dbus_string: DBusString,
-}
-
-pub struct Member {
-    pub dbus_string: DBusString,
-}
-
-pub struct ErrorName {
-    pub dbus_string: DBusString,
-}
-
-pub struct ReplySerial {
-    pub dbus_uint32: DBusUint32,
-}
-
-pub struct Destination {
-    pub dbus_string: DBusString,
-}
-
-pub struct Sender {
-    pub dbus_string: DBusString,
-}
-
-pub struct Signature {
-    pub dbus_signature: DBusSignature,
-}
-
-pub struct UnixFds {
-    pub dbus_uint32: DBusUint32,
+    UnixFds(DBusUint32),
 }
 
 impl HeaderField {
