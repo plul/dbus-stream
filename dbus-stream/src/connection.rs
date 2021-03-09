@@ -249,7 +249,7 @@ impl Connection {
         let user: String = windows_acl::helper::current_user().unwrap();
         let sid: Vec<u8> = windows_acl::helper::name_to_sid(&user, None).unwrap();
         // Convert it to a string, "1000" for example.
-        let sid: String = String::from_utf8_unchecked(sid);
+        let sid: String = unsafe { String::from_utf8_unchecked(sid) };
         // Encode the "1000" string as lowercase hex, fx "31303030", which is the format
         // that the DBus auth protocol wants.
         let sid: String = hex::encode(sid);
