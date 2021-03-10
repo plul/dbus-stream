@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 
 use nom::bytes::complete::tag;
 use nom::bytes::complete::take;
+use nom::combinator::map_opt;
 use nom::combinator::map_res;
 use nom::number::complete::be_f64;
 use nom::number::complete::be_i16;
@@ -30,17 +31,14 @@ impl DBusByte {
 
 impl DBusBoolean {
     fn unmarshall_be(i: &[u8]) -> IResult<&[u8], Self> {
-        let (i, value) = be_u32(i)?;
+        // The boolean is contained in a u32, but only 0 or 1 are valid values.
+        let (i, bool): (&[u8], bool) = map_opt(be_u32, |value| match value {
+            0 => Some(false),
+            1 => Some(true),
+            _ => None,
+        })(i)?;
 
-        // Only 0 or 1 are valid values.
-        if value > 1 {
-            todo!("Don't know how to return an error")
-        }
-
-        // Create a Self type, (the unmarshalled type).
-        let unmarshalled: Self = Self {
-            bool: if value == 1 { true } else { false },
-        };
+        let unmarshalled: Self = Self { bool };
 
         Ok((i, unmarshalled))
     }
