@@ -260,8 +260,11 @@ impl Connection {
     /// Authenticate with the DBus.
     async fn auth(&mut self) -> crate::Result<()> {
         // Send AUTH EXTERNAL
-        self.auth_write_line(format!("AUTH EXTERNAL {}", Self::get_auth_external_param()?))
-            .await?;
+        self.auth_write_line(format!(
+            "AUTH EXTERNAL {}",
+            Self::get_auth_external_param()?
+        ))
+        .await?;
 
         // Expect to get OK from server
         let line: String = self.auth_read_line().await?;
