@@ -18,6 +18,9 @@ pub enum Error {
     #[error(transparent)]
     TryFromSliceError(#[from] std::array::TryFromSliceError),
 
+    #[error(transparent)]
+    FromUtf8Error(#[from] std::string::FromUtf8Error),
+
     #[error("Failed AUTH")]
     FailedAuth,
 }

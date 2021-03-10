@@ -229,7 +229,7 @@ impl Connection {
 
     /// Get AUTH EXTERNAL parameter for unix: UID as hex.
     #[cfg(unix)]
-    fn get_auth_external_param() -> String {
+    fn get_auth_external_param() -> crate::Result<String> {
         // Get UID
         let uid: nix::unistd::Uid = nix::unistd::getuid();
         let uid: u32 = uid.as_raw();
@@ -239,28 +239,28 @@ impl Connection {
         // that the DBus auth protocol wants.
         let uid: String = hex::encode(uid);
 
-        uid
+        Ok(uid)
     }
 
     /// Get AUTH EXTERNAL parameter for windows: SID as hex.
     #[cfg(windows)]
-    fn get_auth_external_param() -> String {
+    fn get_auth_external_param() -> crate::Result<String> {
         // Get the user in order to get its assigned SID.
         let user: String = windows_acl::helper::current_user().unwrap();
         let sid: Vec<u8> = windows_acl::helper::name_to_sid(&user, None).unwrap();
         // Convert it to a string, "1000" for example.
-        let sid: String = unsafe { String::from_utf8_unchecked(sid) };
+        let sid: String = String::from_utf8(sid)?;
         // Encode the "1000" string as lowercase hex, fx "31303030", which is the format
         // that the DBus auth protocol wants.
         let sid: String = hex::encode(sid);
 
-        sid
+        Ok(sid)
     }
 
     /// Authenticate with the DBus.
     async fn auth(&mut self) -> crate::Result<()> {
         // Send AUTH EXTERNAL
-        self.auth_write_line(format!("AUTH EXTERNAL {}", Self::get_auth_external_param()))
+        self.auth_write_line(format!("AUTH EXTERNAL {}", Self::get_auth_external_param()?))
             .await?;
 
         // Expect to get OK from server
