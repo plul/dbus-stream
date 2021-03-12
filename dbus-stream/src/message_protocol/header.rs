@@ -1,5 +1,13 @@
 use std::collections::HashSet;
 
+use signature::SingleCompleteTypeSignature;
+use types::BasicType;
+use types::ContainerType;
+use types::DBusArray;
+use types::DBusByte;
+use types::DBusStruct;
+use types::Type;
+
 use self::header_field::HeaderField;
 use super::MessageType;
 use crate::type_system::*;
@@ -35,7 +43,7 @@ impl HeaderFlag {
 
 impl Header {
     /// Marshall according to the endianness specified in the header
-    pub fn marshall(&self) -> Vec<u8> {
+    pub fn marshall(&self) -> crate::Result<Vec<u8>> {
         let mut v: Vec<u8> = Vec::new();
 
         // 1st byte: Endianness
@@ -62,17 +70,42 @@ impl Header {
         assert_eq!(self.endianness, Endianness::BigEndian);
         v.extend_from_slice(&self.serial.to_be_bytes());
 
-        // Header fields:
-        // A header field is a marshalled Array of Struct(Byte, Variant).
-        for header_field in &self.header_fields {
-            v.extend(header_field.marshall());
-        }
+        // Header fields.
+        let header_fields ={
+            // Header fields is a marshalled Array of Struct(Byte, Variant).
+
+            let header_field_array_items: Vec<Type> = self
+                .header_fields
+                .iter()
+                .map(|header_field| {
+                    Type::Container(ContainerType::Struct(DBusStruct {
+                        fields: vec![Type::Basic(BasicType::Byte(DBusByte {
+                            u8: header_field.decimal_code(),
+                        }))],
+                    }))
+                })
+                .collect();
+
+            let mut header_fields_array = DBusArray {
+                item_type: SingleCompleteTypeSignature::Struct {
+                    fields: vec![
+                        SingleCompleteTypeSignature::Byte,
+                        SingleCompleteTypeSignature::Variant,
+                    ],
+                },
+                items: header_field_array_items,
+            };
+
+            let x = header_fields_array.marshall_be()?;
+            x
+        };
+        v.extend(header_fields);
 
         // Header must be 8-aligned with null bytes
         while v.len() % 8 != 0 {
             v.push(0);
         }
 
-        v
+        Ok(v)
     }
 }

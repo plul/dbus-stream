@@ -110,7 +110,7 @@ impl Connection {
             serial,
             header_fields,
         };
-        let marshalled_header: Vec<u8> = header.marshall();
+        let marshalled_header: Vec<u8> = header.marshall()?;
 
         // Header must be 8-aligned, but that is currently done in the marshall method of the header itself.
         debug_assert_eq!(marshalled_header.len() % 8, 0);

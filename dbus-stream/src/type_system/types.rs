@@ -41,7 +41,7 @@ pub struct DBusArray {
 
 #[derive(Debug)]
 pub struct DBusStruct {
-    pub fields: Vec<(SingleCompleteTypeSignature, Type)>,
+    pub fields: Vec<Type>,
 }
 
 #[derive(Debug)]

@@ -69,13 +69,13 @@ impl ContainerType {
 // }
 
 impl DBusByte {
-    fn marshall(&self) -> u8 {
+    pub fn marshall(&self) -> u8 {
         self.u8
     }
 }
 
 impl DBusBoolean {
-    fn marshall_be(&self) -> [u8; 4] {
+    pub fn marshall_be(&self) -> [u8; 4] {
         let value: u32 = if self.bool { 1 } else { 0 };
 
         DBusUint32 { u32: value }.marshall_be()
@@ -83,49 +83,49 @@ impl DBusBoolean {
 }
 
 impl DBusInt16 {
-    fn marshall_be(&self) -> [u8; 2] {
+    pub fn marshall_be(&self) -> [u8; 2] {
         self.i16.to_be_bytes()
     }
 }
 
 impl DBusUint16 {
-    fn marshall_be(&self) -> [u8; 2] {
+    pub fn marshall_be(&self) -> [u8; 2] {
         self.u16.to_be_bytes()
     }
 }
 
 impl DBusInt32 {
-    fn marshall_be(&self) -> [u8; 4] {
+    pub fn marshall_be(&self) -> [u8; 4] {
         self.i32.to_be_bytes()
     }
 }
 
 impl DBusUint32 {
-    fn marshall_be(&self) -> [u8; 4] {
+    pub fn marshall_be(&self) -> [u8; 4] {
         self.u32.to_be_bytes()
     }
 }
 
 impl DBusInt64 {
-    fn marshall_be(&self) -> [u8; 8] {
+    pub fn marshall_be(&self) -> [u8; 8] {
         self.i64.to_be_bytes()
     }
 }
 
 impl DBusUint64 {
-    fn marshall_be(&self) -> [u8; 8] {
+    pub fn marshall_be(&self) -> [u8; 8] {
         self.u64.to_be_bytes()
     }
 }
 
 impl DBusDouble {
-    fn marshall_be(&self) -> [u8; 8] {
+    pub fn marshall_be(&self) -> [u8; 8] {
         self.f64.to_be_bytes()
     }
 }
 
 impl DBusString {
-    fn marshall_be(&self) -> crate::Result<Vec<u8>> {
+    pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         let mut v = Vec::new();
 
         let length = self.string.len();
@@ -142,7 +142,7 @@ impl DBusString {
 }
 
 impl DBusObjectPath {
-    fn marshall_be(&self) -> crate::Result<Vec<u8>> {
+    pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         // Marshalls the same way as DBusString.
         self.dbus_string.marshall_be()
     }
@@ -153,7 +153,7 @@ impl DBusSignature {
     ///
     /// DBusSignature marshalls the same way as DBusString, except length is on a single
     /// byte.
-    fn marshall_be(&self) -> crate::Result<Vec<u8>> {
+    pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         let mut v = Vec::new();
 
         let length = self.vec.len();
@@ -172,13 +172,13 @@ impl DBusSignature {
 }
 
 impl DBusUnixFileDescriptor {
-    fn marshall_be(&self) -> [u8; 4] {
+    pub fn marshall_be(&self) -> [u8; 4] {
         todo!()
     }
 }
 
 impl DBusVariant {
-    fn marshall_be(&self) -> crate::Result<Vec<u8>> {
+    pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         let signature = self.variant.signature().marshall();
         let value = self.variant.marshall_be()?;
 
@@ -190,7 +190,7 @@ impl DBusVariant {
 }
 
 impl DBusArray {
-    fn marshall_be(&self) -> crate::Result<Vec<u8>> {
+    pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         // Items are marshalled in sequence.
         let mut marshalled_items: Vec<u8> = Vec::new();
         for item in &self.items {
@@ -217,19 +217,19 @@ impl DBusArray {
 }
 
 impl DBusStruct {
-    fn marshall_be(&self) -> Vec<u8> {
+    pub fn marshall_be(&self) -> Vec<u8> {
         todo!()
     }
 }
 
 impl DBusMap {
-    fn marshall_be(&self) -> Vec<u8> {
+    pub fn marshall_be(&self) -> Vec<u8> {
         todo!()
     }
 }
 
 impl SingleCompleteTypeSignature {
-    fn marshall(&self) -> Vec<u8> {
+    pub fn marshall(&self) -> Vec<u8> {
         let mut v: Vec<u8> = Vec::new();
 
         match self {
@@ -283,7 +283,7 @@ impl SingleCompleteTypeSignature {
                 }
                 v.push(b')');
             }
-            Self::Variant(_) => {
+            Self::Variant => {
                 v.push(b'v');
             }
             Self::Map { key, value } => {

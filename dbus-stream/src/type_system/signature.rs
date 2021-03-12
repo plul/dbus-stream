@@ -29,7 +29,7 @@ pub enum SingleCompleteTypeSignature {
     Struct {
         fields: Signature,
     },
-    Variant(Box<SingleCompleteTypeSignature>),
+    Variant,
 
     /// Map (Array of Dict Entries)
     Map {
@@ -58,7 +58,7 @@ impl SingleCompleteTypeSignature {
             Self::UnixFileDescriptor => b'h',
             Self::Array(_) => todo!(),
             Self::Struct { fields: _ } => todo!(),
-            Self::Variant(_) => b'v',
+            Self::Variant => b'v',
             Self::Map { key: _, value: _ } => todo!(),
         }
     }
@@ -83,7 +83,7 @@ impl SingleCompleteTypeSignature {
             Self::UnixFileDescriptor => 4,
             Self::Array(_) => 4,
             Self::Struct { fields: _ } => 8,
-            Self::Variant(_) => 1,
+            Self::Variant => 1,
             Self::Map { key: _, value: _ } => 8,
         }
     }
@@ -222,7 +222,7 @@ impl ToSignature for DBusStruct {
             fields: self
                 .fields
                 .iter()
-                .map(|(signature, _)| signature.clone())
+                .map(|field| field.signature())
                 .collect(),
         }
     }
@@ -230,7 +230,7 @@ impl ToSignature for DBusStruct {
 
 impl ToSignature for DBusVariant {
     fn signature(&self) -> SingleCompleteTypeSignature {
-        SingleCompleteTypeSignature::Variant(Box::new(self.variant.signature()))
+        SingleCompleteTypeSignature::Variant
     }
 }
 

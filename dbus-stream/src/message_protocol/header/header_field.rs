@@ -1,4 +1,5 @@
 use crate::type_system::signature::Signature;
+use crate::type_system::signature::SingleCompleteTypeSignature;
 use crate::type_system::types::*;
 
 pub enum HeaderField {
@@ -26,9 +27,5 @@ impl HeaderField {
             Self::Signature(_) => 8,
             Self::UnixFds(_) => 9,
         }
-    }
-
-    pub fn marshall(&self) -> Vec<u8> {
-        todo!()
     }
 }

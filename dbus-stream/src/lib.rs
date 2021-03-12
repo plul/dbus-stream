@@ -1,4 +1,4 @@
-//! Specification:
+//! DBus Specification:
 //! https://dbus.freedesktop.org/doc/dbus-specification.html#message-protocol-marshaling
 
 pub(crate) mod connection;
