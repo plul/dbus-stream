@@ -174,7 +174,9 @@ impl Connection {
     /// DBus method call, with reply.
     pub async fn call_method_expect_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
         self.call_method(method_call, true).await?;
+
         todo!("not sure what the return type of this will be");
+
         Ok(())
     }
 

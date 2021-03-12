@@ -3,7 +3,6 @@ use super::BasicType;
 use super::ContainerType;
 use super::Type;
 
-pub type Signature = Vec<SingleCompleteTypeSignature>;
 
 trait ToSignature {
     fn signature(&self) -> SingleCompleteTypeSignature;
@@ -27,7 +26,7 @@ pub enum SingleCompleteTypeSignature {
     UnixFileDescriptor,
     Array(Box<SingleCompleteTypeSignature>),
     Struct {
-        fields: Signature,
+        fields: Vec<SingleCompleteTypeSignature>,
     },
     Variant,
 
@@ -41,28 +40,6 @@ pub enum SingleCompleteTypeSignature {
 }
 
 impl SingleCompleteTypeSignature {
-    pub fn code(&self) -> u8 {
-        match self {
-            Self::Byte => b'y',
-            Self::Boolean => b'b',
-            Self::Int16 => b'n',
-            Self::Uint16 => b'q',
-            Self::Int32 => b'i',
-            Self::Uint32 => b'u',
-            Self::Int64 => b'x',
-            Self::Uint64 => b't',
-            Self::Double => b'd',
-            Self::String => b's',
-            Self::ObjectPath => b'o',
-            Self::Signature => b'g',
-            Self::UnixFileDescriptor => b'h',
-            Self::Array(_) => todo!(),
-            Self::Struct { fields: _ } => todo!(),
-            Self::Variant => b'v',
-            Self::Map { key: _, value: _ } => todo!(),
-        }
-    }
-
     /// Global boundary.
     ///
     /// For example, 4 byte values are aligned to a 4-byte boundary, calculated globally.
@@ -219,11 +196,7 @@ impl ToSignature for DBusArray {
 impl ToSignature for DBusStruct {
     fn signature(&self) -> SingleCompleteTypeSignature {
         SingleCompleteTypeSignature::Struct {
-            fields: self
-                .fields
-                .iter()
-                .map(|field| field.signature())
-                .collect(),
+            fields: self.fields.iter().map(|field| field.signature()).collect(),
         }
     }
 }

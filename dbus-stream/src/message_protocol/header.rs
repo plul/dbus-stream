@@ -1,11 +1,12 @@
 use std::collections::HashSet;
 
 use signature::SingleCompleteTypeSignature;
-use types::BasicType;
+use types::{BasicType, DBusSignature};
 use types::ContainerType;
 use types::DBusArray;
 use types::DBusByte;
 use types::DBusStruct;
+use types::DBusVariant;
 use types::Type;
 
 use self::header_field::HeaderField;
@@ -71,22 +72,37 @@ impl Header {
         v.extend_from_slice(&self.serial.to_be_bytes());
 
         // Header fields.
-        let header_fields ={
+        let header_fields = {
             // Header fields is a marshalled Array of Struct(Byte, Variant).
 
             let header_field_array_items: Vec<Type> = self
                 .header_fields
                 .iter()
                 .map(|header_field| {
-                    Type::Container(ContainerType::Struct(DBusStruct {
-                        fields: vec![Type::Basic(BasicType::Byte(DBusByte {
-                            u8: header_field.decimal_code(),
-                        }))],
-                    }))
+                    Type::from(DBusStruct {
+                        fields: vec![
+                            Type::from(DBusByte {
+                                u8: header_field.decimal_code(),
+                            }),
+                            Type::from(DBusVariant {
+                                variant: Box::new(match header_field.clone() {
+                                    HeaderField::Path(inner) => Type::from(inner),
+                                    HeaderField::Interface(inner) => Type::from(inner),
+                                    HeaderField::Member(inner) => Type::from(inner),
+                                    HeaderField::ErrorName(inner) => Type::from(inner),
+                                    HeaderField::ReplySerial(inner) => Type::from(inner),
+                                    HeaderField::Destination(inner) => Type::from(inner),
+                                    HeaderField::Sender(inner) => Type::from(inner),
+                                    HeaderField::Signature(inner) => Type::from(inner),
+                                    HeaderField::UnixFds(inner) => Type::from(inner),
+                                }),
+                            }),
+                        ],
+                    })
                 })
                 .collect();
 
-            let mut header_fields_array = DBusArray {
+            let header_fields_array = DBusArray {
                 item_type: SingleCompleteTypeSignature::Struct {
                     fields: vec![
                         SingleCompleteTypeSignature::Byte,
@@ -96,8 +112,7 @@ impl Header {
                 items: header_field_array_items,
             };
 
-            let x = header_fields_array.marshall_be()?;
-            x
+            header_fields_array.marshall_be()?
         };
         v.extend(header_fields);
 

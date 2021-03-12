@@ -1,7 +1,6 @@
-use crate::type_system::signature::Signature;
-use crate::type_system::signature::SingleCompleteTypeSignature;
 use crate::type_system::types::*;
 
+#[derive(Debug, Clone)]
 pub enum HeaderField {
     Path(DBusObjectPath),
     Interface(DBusString),
@@ -10,7 +9,7 @@ pub enum HeaderField {
     ReplySerial(DBusUint32),
     Destination(DBusString),
     Sender(DBusString),
-    Signature(Signature),
+    Signature(DBusSignature),
     UnixFds(DBusUint32),
 }
 

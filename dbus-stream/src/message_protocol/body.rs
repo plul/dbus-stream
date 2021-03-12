@@ -1,4 +1,4 @@
-use crate::type_system::signature::Signature;
+use crate::type_system::signature::SingleCompleteTypeSignature;
 use crate::type_system::types::*;
 
 pub struct Body {
@@ -15,7 +15,10 @@ impl Body {
     }
 
     /// The body is made up of zero or more [single complete types](crate::type_system::signature::SingleCompleteTypeSignature).
-    pub fn signature(&self) -> Signature {
-        self.arguments.iter().map(|arg| arg.signature()).collect()
+    pub fn signature(&self) -> DBusSignature {
+        let vec: Vec<SingleCompleteTypeSignature> =
+            self.arguments.iter().map(|arg| arg.signature()).collect();
+
+        DBusSignature { vec }
     }
 }

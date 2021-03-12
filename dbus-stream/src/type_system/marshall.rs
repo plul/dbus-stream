@@ -40,7 +40,7 @@ impl ContainerType {
     pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         let vec: Vec<u8> = match self {
             ContainerType::Array(inner) => inner.marshall_be()?,
-            ContainerType::Struct(inner) => inner.marshall_be(),
+            ContainerType::Struct(inner) => inner.marshall_be()?,
             ContainerType::Variant(inner) => inner.marshall_be()?,
             ContainerType::Map(inner) => inner.marshall_be(),
         };
@@ -156,11 +156,19 @@ impl DBusSignature {
     pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         let mut v = Vec::new();
 
-        let length = self.vec.len();
-        let length = u8::try_from(length)?;
+        // This is a length-value encoding. The first byte is the length, on a single byte.
+        // Set it to zero for now,
+        v.push(0);
 
-        v.push(length);
-        v.extend(&self.vec);
+        // Write the marshalled single complete type signatures into the buffer.
+        for single_complete_type_signature in &self.vec {
+            v.extend(single_complete_type_signature.marshall());
+        }
+
+        // Now we can check what the length is, minus the byte at the front that encodes the length.
+        let length = u8::try_from(v.len() - 1)?;
+        // And update:
+        v[0] = length;
 
         // Terminating null byte.
         v.push(0x00);
@@ -217,8 +225,12 @@ impl DBusArray {
 }
 
 impl DBusStruct {
-    pub fn marshall_be(&self) -> Vec<u8> {
-        todo!()
+    pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
+        let mut v = Vec::new();
+        for field in &self.fields {
+            v.extend(field.marshall_be()?);
+        }
+        Ok(v)
     }
 }
 
@@ -295,8 +307,8 @@ impl SingleCompleteTypeSignature {
             }
         }
 
-        todo!("enforce max depths");
+        // TODO: enforce max depths
 
-        todo!("Convert to DBusSignature first, and then marshall that");
+        v
     }
 }
