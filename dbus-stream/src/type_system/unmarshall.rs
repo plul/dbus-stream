@@ -1,7 +1,8 @@
-use std::convert::TryFrom;
+use std::collections::HashSet;
 
 use nom::bytes::complete::tag;
 use nom::bytes::complete::take;
+use nom::combinator::all_consuming;
 use nom::combinator::map_opt;
 use nom::combinator::map_res;
 use nom::number::complete::be_f64;
@@ -13,10 +14,78 @@ use nom::number::complete::be_u32;
 use nom::number::complete::be_u64;
 use nom::number::complete::be_u8;
 use nom::number::complete::le_u32;
-use nom::Err;
+use nom::Finish;
 use nom::IResult;
 
+use super::signature::HEADER_FIELD_SIGNATURE;
+use super::signature::SingleCompleteTypeSignature;
 use super::types::*;
+use super::Endianness;
+use crate::message_protocol::header::HeaderFlag;
+use crate::message_protocol::MessageType;
+
+/// Unmarshall a DBus message (consisting of header and body),
+pub fn unmarshall_message(message: &[u8]) -> crate::Result<()> {
+    let (i, value) = all_consuming(unmarshall_message_parse)(message)
+        .finish()
+        .map_err(|err| crate::Error::ParseError)?;
+
+    Ok(value)
+}
+
+fn unmarshall_message_parse(i: &[u8]) -> IResult<&[u8], ()> {
+    // 1st byte: Endianness
+    let (i, endianness) = Endianness::unmarshall(i)?;
+
+    let parse_u32 = match endianness {
+        Endianness::LittleEndian => le_u32,
+        Endianness::BigEndian => be_u32,
+    };
+
+    // 2nd byte: Message type
+    let (i, message_type) = MessageType::unmarshall(i)?;
+
+    // 3rd byte: Header flags
+    let (i, flag_bitfield) = be_u8(i)?;
+    let flags: HashSet<HeaderFlag> = {
+        let mut set = HashSet::new();
+
+        if 0x1 & flag_bitfield == 0x1 {
+            set.insert(HeaderFlag::NoReplyExpected);
+        }
+
+        if 0x2 & flag_bitfield == 0x2 {
+            set.insert(HeaderFlag::NoAutoStart);
+        }
+
+        if 0x4 & flag_bitfield == 0x4 {
+            set.insert(HeaderFlag::AllowInteractiveAuthorization);
+        }
+
+        set
+    };
+
+    // 4th byte: Major protocol version
+    let (i, major_protocol_version) = tag(&[crate::MAJOR_PROTOCOL_VERSION])(i)?;
+
+    // 5th-8th byte: Length in bytes of the message body.
+    let (i, length_in_bytes_of_message_body) = parse_u32(i)?;
+
+    // 9th-12th byte: Serial linking message and response.
+    let (i, serial) = parse_u32(i)?;
+
+    // Unmarshall header fields
+    let (i, header_field_array) = match endianness {
+        Endianness::BigEndian => DBusArray::unmarshall_be(i, &HEADER_FIELD_SIGNATURE)?,
+        Endianness::LittleEndian => todo!(),
+    };
+
+    todo!("Separate the header fields and package them in a nicer way?");
+
+    todo!("Unmarshall body");
+
+    todo!("Define return type");
+}
 
 impl DBusByte {
     fn unmarshall_be(i: &[u8]) -> IResult<&[u8], Self> {
@@ -167,14 +236,14 @@ impl DBusUnixFileDescriptor {
 }
 
 impl DBusArray {
-    fn unmarshall_be(i: &[u8]) -> IResult<&[u8], Self> {
+    fn unmarshall_be<'a>(i: &'a [u8], item_type: &SingleCompleteTypeSignature) -> IResult<&'a [u8], Self> {
         todo!("Dani? These container types may be a little harder");
     }
 }
 
 impl DBusStruct {
     fn unmarshall_be(i: &[u8]) -> IResult<&[u8], Self> {
-        todo!("Dani? These container types may be a little harder");
+        todo!("Dani? These container types may be a little harder. Consider if it needs to know the type of the fields up front?");
     }
 }
 
@@ -186,6 +255,28 @@ impl DBusVariant {
 
 impl DBusMap {
     fn unmarshall_be(i: &[u8]) -> IResult<&[u8], Self> {
-        todo!("Dani? These container types may be a little harder");
+        todo!("Dani? These container types may be a little harder. Consider if it needs to know the type of key and value up front?");
+    }
+}
+
+impl Endianness {
+    fn unmarshall(i: &[u8]) -> IResult<&[u8], Self> {
+        map_opt(be_u8, |value| match value {
+            b'B' => Some(Endianness::BigEndian),
+            b'l' => Some(Endianness::LittleEndian),
+            _ => None,
+        })(i)
+    }
+}
+
+impl MessageType {
+    fn unmarshall(i: &[u8]) -> IResult<&[u8], Self> {
+        map_opt(be_u8, |value| match value {
+            1 => Some(MessageType::MethodCall),
+            2 => Some(MessageType::MethodReturn),
+            3 => Some(MessageType::Error),
+            4 => Some(MessageType::Signal),
+            _ => None,
+        })(i)
     }
 }

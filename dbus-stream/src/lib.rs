@@ -21,6 +21,9 @@ pub enum Error {
     #[error(transparent)]
     FromUtf8Error(#[from] std::string::FromUtf8Error),
 
+    #[error("Parse error")]
+    ParseError,
+
     #[error("Failed AUTH")]
     FailedAuth,
 }

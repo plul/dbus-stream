@@ -175,7 +175,10 @@ impl Connection {
     pub async fn call_method_expect_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
         self.call_method(method_call, true).await?;
 
-        todo!("not sure what the return type of this will be");
+        let mut buf = [1;1];
+        self.reader.read_exact(&mut buf).await?;
+        dbg!(buf);
+        todo!("Complete this. Read and unmarshall the whole message");
 
         Ok(())
     }

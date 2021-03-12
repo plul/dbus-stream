@@ -3,6 +3,16 @@ use super::BasicType;
 use super::ContainerType;
 use super::Type;
 
+lazy_static::lazy_static! {
+    /// Signature of a header field, which is always STRUCT of (BYTE,VARIANT).
+    pub static ref HEADER_FIELD_SIGNATURE: SingleCompleteTypeSignature =
+        SingleCompleteTypeSignature::Struct {
+            fields: vec![
+                SingleCompleteTypeSignature::Byte,
+                SingleCompleteTypeSignature::Variant,
+            ],
+        };
+}
 
 trait ToSignature {
     fn signature(&self) -> SingleCompleteTypeSignature;
