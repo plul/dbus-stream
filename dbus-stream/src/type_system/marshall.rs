@@ -211,6 +211,9 @@ impl DBusArray {
         let length = u32::try_from(length)?;
         v.extend_from_slice(&length.to_be_bytes());
 
+        // See https://dbus.freedesktop.org/doc/api/html/structDBusHeader.html
+        todo!("whoops - I suspect the alignment needs to be relative to the message as a whole");
+
         // Second thing in the vec is alignment padding, to align with the boundary of the items of the array.
         let boundary = self.item_type.marshalling_boundary();
         while v.len() % boundary != 0 {
