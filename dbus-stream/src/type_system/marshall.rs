@@ -173,7 +173,7 @@ impl DBusSignature {
         // Terminating null byte.
         v.push(0x00);
 
-        todo!("enforce max length of signature is 255 (bytes). But remember, this is only a single complete type being marshalled in this function. Somewhere else the entire signature of bodies is being composed.");
+        // TODO: enforce max length of signature is 255 (bytes). But remember, this is only a single complete type being marshalled in this function. Somewhere else the entire signature of bodies is being composed.
 
         Ok(v)
     }

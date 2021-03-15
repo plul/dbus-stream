@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use nom::bytes::complete::tag;
 use nom::bytes::complete::take;
 use nom::combinator::all_consuming;

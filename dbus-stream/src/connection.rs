@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-use std::convert::TryFrom;
 use std::num::NonZeroU32;
 
 use smol::io::BufReader;
@@ -8,11 +6,9 @@ use smol::prelude::*;
 
 use crate::message_protocol::body::Body;
 use crate::message_protocol::Message;
-use crate::message_protocol::MessageType;
 use crate::message_protocol::MessageTypeParam;
 use crate::message_protocol::MethodCall;
 use crate::type_system::types::*;
-use crate::type_system::*;
 
 pub struct Connection {
     /// Serial that is unique for each message, so replies can be identified.
@@ -26,17 +22,16 @@ pub struct Connection {
 impl Connection {
     pub async fn new_system() -> crate::Result<Self> {
         log::info!("Connecting to system DBus.");
-
         let mut conn = Self::connect_to_system_bus().await?;
-
         // Spec for some reason requires that the first thing we do is to send a null byte.
-        log::debug!("Writing null byte.");
         conn.writer.write(&[0]).await?;
+        log::info!("Connected.");
 
         log::info!("Authenticating.");
         conn.auth().await?;
+        log::info!("Authenticated.");
 
-        log::debug!("Saying hello.");
+        log::info!("Saying hello.");
         conn.say_hello().await?;
 
         Ok(conn)
@@ -98,7 +93,11 @@ impl Connection {
 
     /// Send marshalled message.
     async fn send_message(&mut self, message: &Message) -> crate::Result<()> {
+        log::debug!("Marshalling message");
         let marshalled = message.marshall_be()?;
+        dbg!(crate::type_system::unmarshall::unmarshall_message(&marshalled));
+
+        log::debug!("Transmitting message");
         self.writer.write_all(&marshalled).await?;
         self.writer.flush().await?;
         Ok(())
@@ -108,6 +107,7 @@ impl Connection {
     pub async fn call_method_expect_reply(&mut self, message: &Message) -> crate::Result<()> {
         self.send_message(&message).await?;
 
+        log::debug!("Reading");
         let mut buf = [1; 1];
         self.reader.read_exact(&mut buf).await?;
         dbg!(buf);
@@ -222,7 +222,7 @@ impl Connection {
     async fn auth_write_line<T: AsRef<str>>(&mut self, line: T) -> crate::Result<()> {
         let line: &str = line.as_ref();
 
-        log::debug!("C: {}", line);
+        log::info!("C: {}", line);
 
         self.writer.write_all(line.as_bytes()).await?;
         self.writer.write_all(b"\r\n").await?;
@@ -250,7 +250,7 @@ impl Connection {
         line.pop();
         line.pop();
 
-        log::debug!("S: {}", line);
+        log::info!("S: {}", line);
 
         Ok(line)
     }
