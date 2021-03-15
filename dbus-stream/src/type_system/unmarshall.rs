@@ -17,23 +17,23 @@ use nom::number::complete::le_u32;
 use nom::Finish;
 use nom::IResult;
 
-use super::signature::HEADER_FIELD_SIGNATURE;
 use super::signature::SingleCompleteTypeSignature;
+use super::signature::HEADER_FIELD_SIGNATURE;
 use super::types::*;
 use super::Endianness;
-use crate::message_protocol::header::HeaderFlag;
+use crate::message_protocol::Message;
 use crate::message_protocol::MessageType;
 
 /// Unmarshall a DBus message (consisting of header and body),
-pub fn unmarshall_message(message: &[u8]) -> crate::Result<()> {
-    let (i, value) = all_consuming(unmarshall_message_parse)(message)
+pub fn unmarshall_message(message: &[u8]) -> crate::Result<Message> {
+    let (_i, message) = all_consuming(unmarshall_message_parse)(message)
         .finish()
-        .map_err(|err| crate::Error::ParseError)?;
+        .map_err(|_err| crate::Error::ParseError)?;
 
-    Ok(value)
+    Ok(message)
 }
 
-fn unmarshall_message_parse(i: &[u8]) -> IResult<&[u8], ()> {
+fn unmarshall_message_parse(i: &[u8]) -> IResult<&[u8], Message> {
     // 1st byte: Endianness
     let (i, endianness) = Endianness::unmarshall(i)?;
 
@@ -47,23 +47,9 @@ fn unmarshall_message_parse(i: &[u8]) -> IResult<&[u8], ()> {
 
     // 3rd byte: Header flags
     let (i, flag_bitfield) = be_u8(i)?;
-    let flags: HashSet<HeaderFlag> = {
-        let mut set = HashSet::new();
-
-        if 0x1 & flag_bitfield == 0x1 {
-            set.insert(HeaderFlag::NoReplyExpected);
-        }
-
-        if 0x2 & flag_bitfield == 0x2 {
-            set.insert(HeaderFlag::NoAutoStart);
-        }
-
-        if 0x4 & flag_bitfield == 0x4 {
-            set.insert(HeaderFlag::AllowInteractiveAuthorization);
-        }
-
-        set
-    };
+    let flag_no_reply_expected: bool = 0x1 & flag_bitfield == 0x1;
+    let flag_no_auto_start: bool = 0x2 & flag_bitfield == 0x2;
+    let flag_allow_interactive_authorization: bool = 0x4 & flag_bitfield == 0x4;
 
     // 4th byte: Major protocol version
     let (i, major_protocol_version) = tag(&[crate::MAJOR_PROTOCOL_VERSION])(i)?;
@@ -236,7 +222,10 @@ impl DBusUnixFileDescriptor {
 }
 
 impl DBusArray {
-    fn unmarshall_be<'a>(i: &'a [u8], item_type: &SingleCompleteTypeSignature) -> IResult<&'a [u8], Self> {
+    fn unmarshall_be<'a>(
+        i: &'a [u8],
+        item_type: &SingleCompleteTypeSignature,
+    ) -> IResult<&'a [u8], Self> {
         todo!("Dani? These container types may be a little harder");
     }
 }

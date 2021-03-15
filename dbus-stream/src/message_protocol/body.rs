@@ -1,6 +1,7 @@
 use crate::type_system::signature::SingleCompleteTypeSignature;
 use crate::type_system::types::*;
 
+#[derive(Debug)]
 pub struct Body {
     pub arguments: Vec<Type>,
 }

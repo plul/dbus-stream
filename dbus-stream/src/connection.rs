@@ -1,15 +1,15 @@
 use std::collections::HashSet;
 use std::convert::TryFrom;
+use std::num::NonZeroU32;
 
 use smol::io::BufReader;
 use smol::io::BufWriter;
 use smol::prelude::*;
 
 use crate::message_protocol::body::Body;
-use crate::message_protocol::header::header_field::HeaderField;
-use crate::message_protocol::header::Header;
-use crate::message_protocol::header::HeaderFlag;
+use crate::message_protocol::Message;
 use crate::message_protocol::MessageType;
+use crate::message_protocol::MessageTypeParam;
 use crate::message_protocol::MethodCall;
 use crate::type_system::types::*;
 use crate::type_system::*;
@@ -89,93 +89,26 @@ impl Connection {
         Ok(conn)
     }
 
-    fn marshall_message(
-        &mut self,
-        message_type: MessageType,
-        flags: HashSet<HeaderFlag>,
-        header_fields: Vec<HeaderField>,
-        body: Body,
-    ) -> crate::Result<Vec<u8>> {
-        let marshalled_body: Vec<u8> = body.marshall_be()?;
-
+    fn get_serial(&mut self) -> NonZeroU32 {
+        // Increment
         self.serial += 1;
-        let serial = self.serial;
 
-        let header: Header = Header {
-            endianness: Endianness::BigEndian,
-            message_type,
-            flags,
-            major_protocol_version: crate::MAJOR_PROTOCOL_VERSION,
-            length_in_bytes_of_message_body: u32::try_from(marshalled_body.len())?,
-            serial,
-            header_fields,
-        };
-        let marshalled_header: Vec<u8> = header.marshall()?;
-
-        // Header must be 8-aligned, but that is currently done in the marshall method of the header itself.
-        debug_assert_eq!(marshalled_header.len() % 8, 0);
-
-        let mut message: Vec<u8> = Vec::new();
-        message.extend(marshalled_header);
-        message.extend(marshalled_body);
-
-        Ok(message)
+        NonZeroU32::new(self.serial).expect("Serial overflow")
     }
 
     /// Send marshalled message.
-    async fn send_message(&mut self, message: &[u8]) -> crate::Result<()> {
-        self.writer.write_all(&message).await?;
+    async fn send_message(&mut self, message: &Message) -> crate::Result<()> {
+        let marshalled = message.marshall_be()?;
+        self.writer.write_all(&marshalled).await?;
         self.writer.flush().await?;
-
-        Ok(())
-    }
-
-    async fn call_method(
-        &mut self,
-        method_call: MethodCall,
-        expect_reply: bool,
-    ) -> crate::Result<()> {
-        let mut flags: HashSet<HeaderFlag> = HashSet::new();
-
-        if !expect_reply {
-            flags.insert(HeaderFlag::NoReplyExpected);
-        }
-
-        // Path and Member are mandatory
-        let mut header_fields: Vec<HeaderField> = vec![
-            HeaderField::Path(method_call.path),
-            HeaderField::Member(method_call.member),
-        ];
-
-        // Destination is optional
-        if let Some(destination) = method_call.destination {
-            header_fields.push(HeaderField::Destination(destination));
-        }
-
-        // Interface is optional
-        if let Some(interface) = method_call.interface {
-            header_fields.push(HeaderField::Interface(interface));
-        }
-
-        HeaderField::Signature(method_call.body.signature());
-
-        let message: Vec<u8> = self.marshall_message(
-            MessageType::MethodCall,
-            flags,
-            header_fields,
-            method_call.body,
-        )?;
-
-        self.send_message(&message).await?;
-
         Ok(())
     }
 
     /// DBus method call, with reply.
-    pub async fn call_method_expect_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
-        self.call_method(method_call, true).await?;
+    pub async fn call_method_expect_reply(&mut self, message: &Message) -> crate::Result<()> {
+        self.send_message(&message).await?;
 
-        let mut buf = [1;1];
+        let mut buf = [1; 1];
         self.reader.read_exact(&mut buf).await?;
         dbg!(buf);
         todo!("Complete this. Read and unmarshall the whole message");
@@ -183,31 +116,24 @@ impl Connection {
         Ok(())
     }
 
-    /// DBus method call, no reply.
-    pub async fn call_method_no_reply(&mut self, method_call: MethodCall) -> crate::Result<()> {
-        self.call_method(method_call, false).await?;
-        Ok(())
+    fn formulate_message(
+        &mut self,
+        message_type_param: MessageTypeParam,
+        destination: Option<DBusString>,
+        body: Body,
+    ) -> Message {
+        let serial = self.get_serial();
+
+        Message {
+            flag_no_reply_expected: false,
+            flag_no_auto_start: false,
+            flag_allow_interactive_authorization: false,
+            serial,
+            message_type_param,
+            destination,
+            body,
+        }
     }
-
-    // async fn send_recv(&mut self, payload: &[u8]) -> crate::Result<()> {
-    //     if let Ok(c) = std::str::from_utf8(payload) {
-    //         println!("C: {}", c);
-    //     }
-
-    //     // self.stream.write_all(payload).await?;
-    //     self.writer.write_all(payload).await?;
-
-    //     let mut buf = vec![0u8; 1024];
-
-    //     let n = self.reader.read(&mut buf).await?;
-    //     if n > 0 {
-    //         if let Ok(s) = std::str::from_utf8(&buf[..n]) {
-    //             println!("S: {}", s);
-    //         }
-    //     }
-
-    //     Ok(())
-    // }
 
     /// Spec requires us to say hello on new connections immediately after AUTH.
     async fn say_hello(&mut self) -> crate::Result<()> {
@@ -219,14 +145,18 @@ impl Connection {
         let body = Body { arguments: vec![] };
 
         let method_call = MethodCall {
-            destination: Some(destination),
             path,
             interface: Some(interface),
             member,
-            body,
         };
 
-        let reply = self.call_method_expect_reply(method_call).await?;
+        let message = self.formulate_message(
+            MessageTypeParam::MethodCall(method_call),
+            Some(destination),
+            body,
+        );
+
+        let reply = self.call_method_expect_reply(&message).await?;
         todo!("What to do with the reply?");
 
         Ok(())

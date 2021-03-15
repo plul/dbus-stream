@@ -114,10 +114,9 @@ pub struct DBusObjectPath {
     pub dbus_string: DBusString,
 }
 
-
 #[derive(Debug, Clone)]
 pub struct DBusSignature {
-    pub vec: Vec<SingleCompleteTypeSignature>
+    pub vec: Vec<SingleCompleteTypeSignature>,
 }
 
 #[derive(Debug, Clone)]
@@ -209,3 +208,38 @@ impl_from_containertype!(DBusArray, ContainerType::Array);
 impl_from_containertype!(DBusStruct, ContainerType::Struct);
 impl_from_containertype!(DBusVariant, ContainerType::Variant);
 impl_from_containertype!(DBusMap, ContainerType::Map);
+
+impl DBusStruct {
+    pub fn new<T: Into<Vec<Type>>>(fields: T) -> Self {
+        Self {
+            fields: fields.into(),
+        }
+    }
+}
+
+impl DBusVariant {
+    pub fn new<T: Into<Type>>(variant: T) -> Self {
+        Self {
+            variant: Box::new(variant.into()),
+        }
+    }
+}
+
+impl DBusByte {
+    pub fn new(u8: u8) -> Self {
+        Self { u8 }
+    }
+}
+
+impl DBusArray {
+    pub fn new(item_type: SingleCompleteTypeSignature) -> Self {
+        Self {
+            item_type,
+            items: Vec::new(),
+        }
+    }
+
+    pub fn push<T: Into<Type>>(&mut self, item: T) {
+        self.items.push(item.into());
+    }
+}
