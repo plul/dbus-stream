@@ -233,3 +233,34 @@ impl MessageTypeParam {
         }
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn message_marshalling() -> crate::Result<()> {
+        let message = Message {
+            flag_no_reply_expected: true,
+            flag_no_auto_start: true,
+            flag_allow_interactive_authorization: true,
+            serial: NonZeroU32::new(1).unwrap(),
+            message_type_param: MessageTypeParam::MethodCall(MethodCall {
+                path: DBusObjectPath::new("path")?,
+                interface: Some(DBusString::new("interface")?),
+                member: DBusString::new("member")?,
+            }),
+            destination: None,
+            body: Body::default(),
+        };
+
+        let marshalled = message.marshall_be()?;
+
+        // Check first 8 bytes of header:
+        // endianness, message type, flags, major protocol version, and finally 4 bytes for body length.
+        assert_eq!(&marshalled[0..8], &[b'B', 1, 0x7, 1, 0, 0, 0, 0]);
+
+        Ok(())
+    }
+}
