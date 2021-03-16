@@ -19,7 +19,7 @@ trait ToSignature {
 }
 
 /// Signature for a "Single Complete Type".
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SingleCompleteTypeSignature {
     Byte,
     Boolean,
@@ -74,6 +74,82 @@ impl SingleCompleteTypeSignature {
             Self::Map { key: _, value: _ } => 8,
         }
     }
+
+    /// Return the signature as an ASCII string.
+    ///
+    /// For marshalling and transmitting on the wire, LV encoding must be taken into
+    /// account. This method merely returns the ASCII such as "ai" for an array of INT32.
+    ///
+    /// TODO: enforce max depths
+    pub fn serialize(&self) -> Vec<u8> {
+        match self {
+            Self::Byte => {
+                vec![b'y']
+            }
+            Self::Boolean => {
+                vec![b'b']
+            }
+            Self::Int16 => {
+                vec![b'n']
+            }
+            Self::Uint16 => {
+                vec![b'q']
+            }
+            Self::Int32 => {
+                vec![b'i']
+            }
+            Self::Uint32 => {
+                vec![b'u']
+            }
+            Self::Int64 => {
+                vec![b'x']
+            }
+            Self::Uint64 => {
+                vec![b't']
+            }
+            Self::Double => {
+                vec![b'd']
+            }
+            Self::String => {
+                vec![b's']
+            }
+            Self::ObjectPath => {
+                vec![b'o']
+            }
+            Self::Signature => {
+                vec![b'g']
+            }
+            Self::UnixFileDescriptor => {
+                vec![b'h']
+            }
+            Self::Array(inner) => {
+                let mut v = vec![b'a'];
+                v.extend(inner.serialize());
+                v
+            }
+            Self::Struct { fields } => {
+                let mut v = Vec::new();
+                v.push(b'(');
+                for field in fields {
+                    v.extend(field.serialize());
+                }
+                v.push(b')');
+                v
+            }
+            Self::Variant => {
+                vec![b'v']
+            }
+            Self::Map { key, value } => {
+                let mut v = Vec::new();
+                v.push(b'a');
+                v.push(b'{');
+                v.extend(key.serialize());
+                v.extend(value.serialize());
+                v.push(b'}');
+                v
+            }
+        }
+    }
 }
 
 impl Type {
@@ -118,6 +194,8 @@ impl ToSignature for ContainerType {
         }
     }
 }
+
+// TODO replace all these impls with a macro
 
 impl ToSignature for DBusByte {
     fn signature(&self) -> SingleCompleteTypeSignature {

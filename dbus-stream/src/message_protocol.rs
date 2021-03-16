@@ -4,6 +4,8 @@ use std::convert::TryFrom;
 use std::num::NonZeroU32;
 
 use self::body::Body;
+use crate::type_system::marshall::Marshall;
+use crate::type_system::marshall::Marshaller;
 use crate::type_system::signature::HEADER_FIELD_SIGNATURE;
 use crate::type_system::types::*;
 use crate::type_system::Endianness;
@@ -110,7 +112,16 @@ impl MessageType {
 impl Message {
     pub fn marshall_be(&self) -> crate::Result<Vec<u8>> {
         let endianness = Endianness::BigEndian;
-        let marshalled_body: Vec<u8> = self.body.marshall_be()?;
+
+        let marshalled_body: Vec<u8> = self
+            .body
+            .arguments
+            .iter()
+            .fold(Marshaller::default(), |mut m, arg| {
+                m.marshall_be(arg);
+                m
+            })
+            .finish();
 
         let mut header: Vec<u8> = Vec::new();
 
@@ -177,17 +188,16 @@ impl Message {
             _ => todo!("Header fields for other message types"),
         };
 
+        let mut header = Marshaller { buf: header };
+
         // Convert header fields enums to a DBus Array of Struct of (Byte, Variant), and marshall that.
-        let marshalled_header_fields = prepare_header_fields(header_fields).marshall_be()?;
-        header.extend(marshalled_header_fields);
+        header.marshall_be(&prepare_header_fields(header_fields))?;
 
         // Header must be 8-aligned with null bytes
-        while header.len() % 8 != 0 {
-            header.push(0);
-        }
+        header.align(8);
 
         // Finalize marshalled message by appending body.
-        let mut message = header;
+        let mut message = header.finish();
         message.extend(marshalled_body);
         Ok(message)
     }
@@ -233,7 +243,6 @@ impl MessageTypeParam {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
