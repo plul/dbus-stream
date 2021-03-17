@@ -187,10 +187,21 @@ impl ToSignature for ContainerType {
     /// Return signature for this container type.
     fn signature(&self) -> SingleCompleteTypeSignature {
         match self {
-            ContainerType::Array(dbus_array) => todo!(),
-            ContainerType::Struct(dbus_struct) => todo!(),
-            ContainerType::Variant(dbus_variant) => todo!(),
-            ContainerType::Map(dbus_map) => todo!(),
+            ContainerType::Array(dbus_array) => {
+                SingleCompleteTypeSignature::Array(Box::new(dbus_array.item_type.clone()))
+            }
+            ContainerType::Struct(dbus_struct) => SingleCompleteTypeSignature::Struct {
+                fields: dbus_struct
+                    .fields
+                    .iter()
+                    .map(|field_type| field_type.signature())
+                    .collect(),
+            },
+            ContainerType::Variant(_dbus_variant) => SingleCompleteTypeSignature::Variant,
+            ContainerType::Map(dbus_map) => SingleCompleteTypeSignature::Map {
+                key: Box::new(dbus_map.key_type.clone()),
+                value: Box::new(dbus_map.value_type.clone()),
+            },
         }
     }
 }

@@ -95,7 +95,9 @@ impl Connection {
     async fn send_message(&mut self, message: &Message) -> crate::Result<()> {
         log::debug!("Marshalling message");
         let marshalled = message.marshall_be()?;
-        dbg!(crate::type_system::unmarshall::unmarshall_message(&marshalled));
+        dbg!(crate::type_system::unmarshall::unmarshall_message(
+            &marshalled
+        ));
 
         log::debug!("Transmitting message");
         self.writer.write_all(&marshalled).await?;
