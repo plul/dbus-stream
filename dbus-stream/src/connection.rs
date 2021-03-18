@@ -95,9 +95,11 @@ impl Connection {
     async fn send_message(&mut self, message: &Message) -> crate::Result<()> {
         log::debug!("Marshalling message");
         let marshalled = message.marshall_be()?;
-        dbg!(crate::type_system::unmarshall::unmarshall_message(
-            &marshalled
-        ));
+
+        // debug_assert_eq!(
+        //     message,
+        //     &crate::type_system::unmarshall::unmarshall_message(&marshalled)?
+        // );
 
         log::debug!("Transmitting message");
         self.writer.write_all(&marshalled).await?;
@@ -140,7 +142,7 @@ impl Connection {
     /// Spec requires us to say hello on new connections immediately after AUTH.
     async fn say_hello(&mut self) -> crate::Result<()> {
         let destination = DBusString::new("org.freedesktop.DBus")?;
-        let path = DBusObjectPath::new("org/freedesktop/DBus")?;
+        let path = DBusObjectPath::new("/org/freedesktop/DBus")?;
         let interface = DBusString::new("org.freedesktop.DBus")?;
         let member = DBusString::new("Hello")?;
 
@@ -244,8 +246,10 @@ impl Connection {
         self.reader.read_line(&mut line).await?;
         debug_assert!(line.ends_with('\n'));
 
-        // In DBus, \r\n indicates a line ending, but messages are not expected to
-        // span multiple lines.
+        // In DBus, \r\n indicates a line ending, but Rust will split on \n in `read_line` above.
+        // So we need to check that we found a \r\n line ending.
+        // These messages are not expected to span multiple lines, so we should expect that
+        // the \n character we found is preceded by \r.
         assert!(line.ends_with("\r\n"));
 
         // Pop the trailing "\r\n" from the line.

@@ -117,10 +117,12 @@ impl Message {
             .body
             .arguments
             .iter()
-            .fold(Marshaller::default(), |mut m, arg| {
-                m.marshall_be(arg);
-                m
-            })
+            .try_fold(Marshaller::default(), |mut m, arg| {
+                match m.marshall_be(arg) {
+                    Ok(()) => Ok(m),
+                    Err(err) => Err(err),
+                }
+            })?
             .finish();
 
         let mut header: Vec<u8> = Vec::new();
