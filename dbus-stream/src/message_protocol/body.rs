@@ -1,3 +1,4 @@
+use crate::type_system::signature::Signature;
 use crate::type_system::signature::SingleCompleteTypeSignature;
 use crate::type_system::types::*;
 

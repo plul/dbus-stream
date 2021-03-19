@@ -391,18 +391,18 @@ impl DBusSignature {
     fn unmarshall_be(i: &[u8]) -> IResult<&[u8], Self> {
         fn unmarshall_basic_type(b: u8) -> SingleCompleteTypeSignature {
             match b {
-                b'y' => SingleCompleteTypeSignature::Byte,
-                b'b' => SingleCompleteTypeSignature::Boolean,
-                b'n' => SingleCompleteTypeSignature::Int16,
-                b'q' => SingleCompleteTypeSignature::Uint16,
-                b'i' => SingleCompleteTypeSignature::Int32,
-                b'u' => SingleCompleteTypeSignature::Uint32,
-                b'x' => SingleCompleteTypeSignature::Int64,
-                b't' => SingleCompleteTypeSignature::Uint64,
-                b'd' => SingleCompleteTypeSignature::Double,
-                b's' => SingleCompleteTypeSignature::String,
-                b'o' => SingleCompleteTypeSignature::ObjectPath,
-                b'h' => SingleCompleteTypeSignature::UnixFileDescriptor,
+                b'y' => SingleCompleteTypeSignature::DBusByte,
+                b'b' => SingleCompleteTypeSignature::DBusBoolean,
+                b'n' => SingleCompleteTypeSignature::DBusInt16,
+                b'q' => SingleCompleteTypeSignature::DBusUint16,
+                b'i' => SingleCompleteTypeSignature::DBusInt32,
+                b'u' => SingleCompleteTypeSignature::DBusUint32,
+                b'x' => SingleCompleteTypeSignature::DBusInt64,
+                b't' => SingleCompleteTypeSignature::DBusUint64,
+                b'd' => SingleCompleteTypeSignature::DBusDouble,
+                b's' => SingleCompleteTypeSignature::DBusString,
+                b'o' => SingleCompleteTypeSignature::DBusObjectPath,
+                b'h' => SingleCompleteTypeSignature::DBusUnixFileDescriptor,
                 _ => todo!("Dani"),
             }
         }
@@ -455,73 +455,73 @@ impl DBusArray {
 
         let mut dba: Self = Self::new(item_type.clone());
         match item_type {
-            SingleCompleteTypeSignature::Byte => {
+            SingleCompleteTypeSignature::DBusByte => {
                 for pos in 0..length as usize {
                     let (_, b) = DBusByte::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::Boolean => {
+            SingleCompleteTypeSignature::DBusBoolean => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusBoolean::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::Int16 => {
+            SingleCompleteTypeSignature::DBusInt16 => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusInt16::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::Uint16 => {
+            SingleCompleteTypeSignature::DBusUint16 => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusUint16::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::Int32 => {
+            SingleCompleteTypeSignature::DBusInt32 => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusInt32::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::Uint32 => {
+            SingleCompleteTypeSignature::DBusUint32 => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusUint32::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::Int64 => {
+            SingleCompleteTypeSignature::DBusInt64 => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusInt64::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::Uint64 => {
+            SingleCompleteTypeSignature::DBusUint64 => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusUint64::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::Double => {
+            SingleCompleteTypeSignature::DBusDouble => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusDouble::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::String => {
+            SingleCompleteTypeSignature::DBusString => {
                 for pos in (0..length as usize).step_by(size) {
                     let (_, b) = DBusString::unmarshall_be(&i[pos..])?;
                     dba.push(BasicType::from(b));
                 }
             }
-            SingleCompleteTypeSignature::ObjectPath => todo!("Dani"),
-            SingleCompleteTypeSignature::Signature => todo!("Dani"),
-            SingleCompleteTypeSignature::UnixFileDescriptor => todo!("Dani"),
-            SingleCompleteTypeSignature::Array(_) => todo!("Dani"),
-            SingleCompleteTypeSignature::Struct { fields: _ } => todo!("Dani"),
-            SingleCompleteTypeSignature::Variant => todo!("Dani"),
-            SingleCompleteTypeSignature::Map { key: _, value: _ } => todo!("Dani"),
+            SingleCompleteTypeSignature::DBusObjectPath => todo!("Dani"),
+            SingleCompleteTypeSignature::DBusSignature => todo!("Dani"),
+            SingleCompleteTypeSignature::DBusUnixFileDescriptor => todo!("Dani"),
+            SingleCompleteTypeSignature::DBusArray(_) => todo!("Dani"),
+            SingleCompleteTypeSignature::DBusStruct { fields: _ } => todo!("Dani"),
+            SingleCompleteTypeSignature::DBusVariant => todo!("Dani"),
+            SingleCompleteTypeSignature::DBusDictEntry { key: _, value: _ } => todo!("Dani"),
         };
 
         Ok((i, dba))
@@ -582,11 +582,11 @@ mod tests {
         ];
 
         // TODO: Not sure how to get around the `unwrap` call.
-        let (_, dba) = DBusArray::unmarshall_be(&a, &SingleCompleteTypeSignature::Byte).unwrap();
+        let (_, dba) = DBusArray::unmarshall_be(&a, &SingleCompleteTypeSignature::DBusByte).unwrap();
 
         assert_eq!(b.len(), dba.items.len());
         for (idx, e) in dba.items.iter().enumerate() {
-            if let Type::Basic(BasicType::Byte(dbb)) = e {
+            if let Type::Basic(BasicType::DBusByte(dbb)) = e {
                 assert_eq!(dbb.u8, b[idx].u8);
             } else {
                 panic!();
@@ -602,14 +602,14 @@ mod tests {
         let (_, x) = DBusSignature::unmarshall_be(&a).unwrap();
 
         assert_eq!(x.vec.len(), 9);
-        assert_eq!(x.vec[0], SingleCompleteTypeSignature::Byte);
-        assert_eq!(x.vec[1], SingleCompleteTypeSignature::Boolean);
-        assert_eq!(x.vec[2], SingleCompleteTypeSignature::Int16);
-        assert_eq!(x.vec[3], SingleCompleteTypeSignature::Uint16);
-        assert_eq!(x.vec[4], SingleCompleteTypeSignature::Int32);
-        assert_eq!(x.vec[5], SingleCompleteTypeSignature::Uint32);
-        assert_eq!(x.vec[6], SingleCompleteTypeSignature::Int64);
-        assert_eq!(x.vec[7], SingleCompleteTypeSignature::Uint64);
-        assert_eq!(x.vec[8], SingleCompleteTypeSignature::Double);
+        assert_eq!(x.vec[0], SingleCompleteTypeSignature::DBusByte);
+        assert_eq!(x.vec[1], SingleCompleteTypeSignature::DBusBoolean);
+        assert_eq!(x.vec[2], SingleCompleteTypeSignature::DBusInt16);
+        assert_eq!(x.vec[3], SingleCompleteTypeSignature::DBusUint16);
+        assert_eq!(x.vec[4], SingleCompleteTypeSignature::DBusInt32);
+        assert_eq!(x.vec[5], SingleCompleteTypeSignature::DBusUint32);
+        assert_eq!(x.vec[6], SingleCompleteTypeSignature::DBusInt64);
+        assert_eq!(x.vec[7], SingleCompleteTypeSignature::DBusUint64);
+        assert_eq!(x.vec[8], SingleCompleteTypeSignature::DBusDouble);
     }
 }
