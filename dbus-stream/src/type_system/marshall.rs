@@ -98,10 +98,10 @@ impl Marshall<BasicType> for Marshaller {
 impl Marshall<ContainerType> for Marshaller {
     fn marshall_be(&mut self, t: &ContainerType) -> crate::Result<()> {
         match t {
-            ContainerType::Array(inner) => self.marshall_be(inner),
-            ContainerType::Struct(inner) => self.marshall_be(inner),
-            ContainerType::Variant(inner) => self.marshall_be(inner),
-            ContainerType::DictEntry(inner) => self.marshall_be(inner),
+            ContainerType::DBusArray(inner) => self.marshall_be(inner),
+            ContainerType::DBusStruct(inner) => self.marshall_be(inner),
+            ContainerType::DBusVariant(inner) => self.marshall_be(inner),
+            ContainerType::DBusDictEntry(inner) => self.marshall_be(inner),
         }
     }
 }

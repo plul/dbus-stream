@@ -8,10 +8,10 @@ pub enum Type {
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ContainerType {
-    Array(DBusArray),
-    Struct(DBusStruct),
-    Variant(DBusVariant),
-    DictEntry(DBusDictEntry),
+    DBusArray(DBusArray),
+    DBusStruct(DBusStruct),
+    DBusVariant(DBusVariant),
+    DBusDictEntry(DBusDictEntry),
 }
 
 /// Macro to create the primitive (basic) DBus types, that are modelled as just simple wrappers over a native Rust type.
@@ -135,25 +135,26 @@ impl From<ContainerType> for Type {
     }
 }
 
-macro_rules! impl_from_containertype {
-    ($dbustype:ident, $variant:expr) => {
-        impl From<$dbustype> for ContainerType {
-            fn from(dbustype: $dbustype) -> ContainerType {
-                $variant(dbustype)
+macro_rules! impl_containertype {
+    ($name:ident) => {
+        impl From<$name> for ContainerType {
+            fn from(x: $name) -> ContainerType {
+                ContainerType::$name(x)
             }
         }
-        impl From<$dbustype> for Type {
-            fn from(dbustype: $dbustype) -> Type {
-                Type::Container($variant(dbustype))
+
+        impl From<$name> for Type {
+            fn from(x: $name) -> Type {
+                Type::Container(ContainerType::from(x))
             }
         }
     };
 }
 
-impl_from_containertype!(DBusArray, ContainerType::Array);
-impl_from_containertype!(DBusStruct, ContainerType::Struct);
-impl_from_containertype!(DBusVariant, ContainerType::Variant);
-impl_from_containertype!(DBusDictEntry, ContainerType::DictEntry);
+impl_containertype!(DBusArray);
+impl_containertype!(DBusStruct);
+impl_containertype!(DBusVariant);
+impl_containertype!(DBusDictEntry);
 
 impl DBusStruct {
     pub fn new<T: Into<Vec<Type>>>(fields: T) -> Self {

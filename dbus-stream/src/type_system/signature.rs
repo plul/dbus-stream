@@ -211,18 +211,18 @@ impl ToSignature for ContainerType {
     /// Return signature for this container type.
     fn signature(&self) -> SingleCompleteTypeSignature {
         match self {
-            ContainerType::Array(dbus_array) => {
+            ContainerType::DBusArray(dbus_array) => {
                 SingleCompleteTypeSignature::Array(Box::new(dbus_array.item_type.clone()))
             }
-            ContainerType::Struct(dbus_struct) => SingleCompleteTypeSignature::Struct {
+            ContainerType::DBusStruct(dbus_struct) => SingleCompleteTypeSignature::Struct {
                 fields: dbus_struct
                     .fields
                     .iter()
                     .map(|field_type| field_type.signature())
                     .collect(),
             },
-            ContainerType::Variant(_dbus_variant) => SingleCompleteTypeSignature::Variant,
-            ContainerType::DictEntry(dbus_dict_entry) => SingleCompleteTypeSignature::DictEntry {
+            ContainerType::DBusVariant(_dbus_variant) => SingleCompleteTypeSignature::Variant,
+            ContainerType::DBusDictEntry(dbus_dict_entry) => SingleCompleteTypeSignature::DictEntry {
                 key: Box::new(dbus_dict_entry.key.clone()),
                 value: Box::new(dbus_dict_entry.value.signature()),
             },
@@ -230,7 +230,6 @@ impl ToSignature for ContainerType {
     }
 }
 
-// TODO replace all these impls with a macro
 
 impl ToSignature for DBusByte {
     fn signature(&self) -> SingleCompleteTypeSignature {
