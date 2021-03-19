@@ -18,7 +18,10 @@ impl Marshaller {
 
     /// Push null bytes until aligned
     pub fn align(&mut self, alignment: usize) {
-        debug_assert!([2, 4, 8].contains(&alignment));
+        debug_assert!(
+            [2, 4, 8].contains(&alignment),
+            "I don't expect I'll need this method for other alignments"
+        );
 
         while self.buf.len() % alignment != 0 {
             self.buf.push(0);
@@ -98,7 +101,7 @@ impl Marshall<ContainerType> for Marshaller {
             ContainerType::Array(inner) => self.marshall_be(inner),
             ContainerType::Struct(inner) => self.marshall_be(inner),
             ContainerType::Variant(inner) => self.marshall_be(inner),
-            ContainerType::Map(inner) => self.marshall_be(inner),
+            ContainerType::DictEntry(inner) => self.marshall_be(inner),
         }
     }
 }
@@ -285,8 +288,8 @@ impl Marshall<DBusStruct> for Marshaller {
     }
 }
 
-impl Marshall<DBusMap> for Marshaller {
-    fn marshall_be(&mut self, t: &DBusMap) -> crate::Result<()> {
+impl Marshall<DBusDictEntry> for Marshaller {
+    fn marshall_be(&mut self, t: &DBusDictEntry) -> crate::Result<()> {
         todo!()
     }
 }

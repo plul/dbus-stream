@@ -39,9 +39,7 @@ pub enum SingleCompleteTypeSignature {
         fields: Vec<SingleCompleteTypeSignature>,
     },
     Variant,
-
-    /// Map (Array of Dict Entries)
-    Map {
+    DictEntry {
         /// Key may only be a basic type, not a container type
         key: Box<SingleCompleteTypeSignature>,
 
@@ -50,6 +48,28 @@ pub enum SingleCompleteTypeSignature {
 }
 
 impl SingleCompleteTypeSignature {
+    pub fn is_basic_type(&self) -> bool {
+        match self {
+            Self::Byte => true,
+            Self::Boolean => true,
+            Self::Int16 => true,
+            Self::Uint16 => true,
+            Self::Int32 => true,
+            Self::Uint32 => true,
+            Self::Int64 => true,
+            Self::Uint64 => true,
+            Self::Double => true,
+            Self::String => true,
+            Self::ObjectPath => true,
+            Self::Signature => true,
+            Self::UnixFileDescriptor => true,
+            Self::Array(_) => false,
+            Self::Struct { fields: _ } => false,
+            Self::Variant => false,
+            Self::DictEntry { key: _, value: _ } => false,
+        }
+    }
+
     /// Global boundary.
     ///
     /// For example, 4 byte values are aligned to a 4-byte boundary, calculated globally.
@@ -71,7 +91,7 @@ impl SingleCompleteTypeSignature {
             Self::Array(_) => 4,
             Self::Struct { fields: _ } => 8,
             Self::Variant => 1,
-            Self::Map { key: _, value: _ } => 8,
+            Self::DictEntry { key: _, value: _ } => 8,
         }
     }
 
@@ -139,7 +159,11 @@ impl SingleCompleteTypeSignature {
             Self::Variant => {
                 vec![b'v']
             }
-            Self::Map { key, value } => {
+            Self::DictEntry { key, value } => {
+                // Assert that key is basic type.
+                // Maybe this should be more than a debug assertion, not sure.
+                debug_assert!(key.is_basic_type());
+
                 let mut v = Vec::new();
                 v.push(b'a');
                 v.push(b'{');
@@ -198,9 +222,9 @@ impl ToSignature for ContainerType {
                     .collect(),
             },
             ContainerType::Variant(_dbus_variant) => SingleCompleteTypeSignature::Variant,
-            ContainerType::Map(dbus_map) => SingleCompleteTypeSignature::Map {
-                key: Box::new(dbus_map.key_type.clone()),
-                value: Box::new(dbus_map.value_type.clone()),
+            ContainerType::DictEntry(dbus_dict_entry) => SingleCompleteTypeSignature::DictEntry {
+                key: Box::new(dbus_dict_entry.key.clone()),
+                value: Box::new(dbus_dict_entry.value.signature()),
             },
         }
     }
@@ -306,11 +330,11 @@ impl ToSignature for DBusVariant {
     }
 }
 
-impl ToSignature for DBusMap {
+impl ToSignature for DBusDictEntry {
     fn signature(&self) -> SingleCompleteTypeSignature {
-        SingleCompleteTypeSignature::Map {
-            key: Box::new(self.key_type.clone()),
-            value: Box::new(self.value_type.clone()),
+        SingleCompleteTypeSignature::DictEntry {
+            key: Box::new(self.key.clone()),
+            value: Box::new(self.value.signature()),
         }
     }
 }

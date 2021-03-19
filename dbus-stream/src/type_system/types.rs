@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use super::signature::*;
 
 #[derive(Debug, Clone)]
@@ -30,7 +28,15 @@ pub enum ContainerType {
     Array(DBusArray),
     Struct(DBusStruct),
     Variant(DBusVariant),
-    Map(DBusMap),
+    DictEntry(DBusDictEntry),
+}
+
+#[derive(Debug, Clone)]
+pub struct DBusDictEntry {
+    /// Key must be a basic type, not a container type.
+    pub key: SingleCompleteTypeSignature,
+
+    pub value: Box<Type>,
 }
 
 #[derive(Debug, Clone)]
@@ -47,16 +53,6 @@ pub struct DBusStruct {
 #[derive(Debug, Clone)]
 pub struct DBusVariant {
     pub variant: Box<Type>,
-}
-
-/// Map (Array of Dict Entries)
-#[derive(Debug, Clone)]
-pub struct DBusMap {
-    /// Key must be a basic type, not a container type.
-    pub key_type: SingleCompleteTypeSignature,
-
-    pub value_type: SingleCompleteTypeSignature,
-    pub map: HashMap<BasicType, Type>,
 }
 
 #[derive(Debug, Clone)]
@@ -161,15 +157,15 @@ impl From<ContainerType> for Type {
 }
 
 macro_rules! impl_from_basictype {
-    ($dbustype:ident, $variant:ident) => {
+    ($dbustype:ident, $variant:expr) => {
         impl From<$dbustype> for BasicType {
             fn from(dbustype: $dbustype) -> BasicType {
-                BasicType::$variant(dbustype)
+                $variant(dbustype)
             }
         }
         impl From<$dbustype> for Type {
             fn from(dbustype: $dbustype) -> Type {
-                Type::Basic(BasicType::$variant(dbustype))
+                Type::Basic($variant(dbustype))
             }
         }
     };
@@ -190,24 +186,24 @@ macro_rules! impl_from_containertype {
     };
 }
 
-impl_from_basictype!(DBusByte, Byte);
-impl_from_basictype!(DBusBoolean, Boolean);
-impl_from_basictype!(DBusInt16, Int16);
-impl_from_basictype!(DBusUint16, Uint16);
-impl_from_basictype!(DBusInt32, Int32);
-impl_from_basictype!(DBusUint32, Uint32);
-impl_from_basictype!(DBusInt64, Int64);
-impl_from_basictype!(DBusUint64, Uint64);
-impl_from_basictype!(DBusDouble, Double);
-impl_from_basictype!(DBusString, String);
-impl_from_basictype!(DBusObjectPath, ObjectPath);
-impl_from_basictype!(DBusSignature, Signature);
-impl_from_basictype!(DBusUnixFileDescriptor, UnixFileDescriptor);
+impl_from_basictype!(DBusByte, BasicType::Byte);
+impl_from_basictype!(DBusBoolean, BasicType::Boolean);
+impl_from_basictype!(DBusInt16, BasicType::Int16);
+impl_from_basictype!(DBusUint16, BasicType::Uint16);
+impl_from_basictype!(DBusInt32, BasicType::Int32);
+impl_from_basictype!(DBusUint32, BasicType::Uint32);
+impl_from_basictype!(DBusInt64, BasicType::Int64);
+impl_from_basictype!(DBusUint64, BasicType::Uint64);
+impl_from_basictype!(DBusDouble, BasicType::Double);
+impl_from_basictype!(DBusString, BasicType::String);
+impl_from_basictype!(DBusObjectPath, BasicType::ObjectPath);
+impl_from_basictype!(DBusSignature, BasicType::Signature);
+impl_from_basictype!(DBusUnixFileDescriptor, BasicType::UnixFileDescriptor);
 
 impl_from_containertype!(DBusArray, ContainerType::Array);
 impl_from_containertype!(DBusStruct, ContainerType::Struct);
 impl_from_containertype!(DBusVariant, ContainerType::Variant);
-impl_from_containertype!(DBusMap, ContainerType::Map);
+impl_from_containertype!(DBusDictEntry, ContainerType::DictEntry);
 
 impl DBusStruct {
     pub fn new<T: Into<Vec<Type>>>(fields: T) -> Self {

@@ -540,7 +540,7 @@ impl DBusVariant {
     }
 }
 
-impl DBusMap {
+impl DBusDictEntry {
     fn unmarshall_be(i: &[u8]) -> IResult<&[u8], Self> {
         todo!("Dani? These container types may be a little harder. Consider if it needs to know the type of key and value up front?");
     }
