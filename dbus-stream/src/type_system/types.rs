@@ -1,29 +1,12 @@
 use super::signature::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Type {
     Basic(BasicType),
     Container(ContainerType),
 }
 
-#[derive(Debug, Clone)]
-pub enum BasicType {
-    Byte(DBusByte),
-    Boolean(DBusBoolean),
-    Int16(DBusInt16),
-    Uint16(DBusUint16),
-    Int32(DBusInt32),
-    Uint32(DBusUint32),
-    Int64(DBusInt64),
-    Uint64(DBusUint64),
-    Double(DBusDouble),
-    String(DBusString),
-    ObjectPath(DBusObjectPath),
-    Signature(DBusSignature),
-    UnixFileDescriptor(DBusUnixFileDescriptor),
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ContainerType {
     Array(DBusArray),
     Struct(DBusStruct),
@@ -31,7 +14,68 @@ pub enum ContainerType {
     DictEntry(DBusDictEntry),
 }
 
-#[derive(Debug, Clone)]
+/// Macro to create the primitive (basic) DBus types, that are modelled as just simple wrappers over a native Rust type.
+macro_rules! basic_type {
+    (
+        // Repetition
+        $(
+            [$name:ident, $field_name:ident, $inner_type:ty]
+        )
+        // ...separated by commas...
+        ,
+        // ...zero or more times
+        *
+    ) => {
+        #[derive(Debug, Clone, PartialEq, PartialOrd)]
+        pub enum BasicType {
+            // Loop over the variants to build the enum:
+            $(
+                $name($name),
+            )*
+        }
+
+        // Create the individual wrapper types
+        $(
+            #[derive(Debug, Clone, PartialEq, PartialOrd)]
+            pub struct $name {
+                pub $field_name: $inner_type
+            }
+
+            /// Wrap it in [BasicType].
+            impl From<$name> for BasicType {
+                fn from(x: $name) -> BasicType {
+                    BasicType::$name(x)
+                }
+            }
+
+            /// Wrap it in [Type].
+            impl From<$name> for Type {
+                fn from(x: $name) -> Type {
+                    Type::Basic(BasicType::from(x))
+                }
+            }
+        )*
+    };
+}
+
+// Define the basic types.
+basic_type!(
+    [DBusByte, u8, u8],
+    [DBusBoolean, bool, bool],
+    [DBusInt16, i16, i16],
+    [DBusUint16, u16, u16],
+    [DBusInt32, i32, i32],
+    [DBusUint32, u32, u32],
+    [DBusInt64, i64, i64],
+    [DBusUint64, u64, u64],
+    [DBusDouble, f64, f64],
+    [DBusString, string, String],
+    [DBusObjectPath, dbus_string, DBusString],
+    [DBusSignature, vec, Vec<SingleCompleteTypeSignature>],
+    [DBusUnixFileDescriptor, u32, u32]
+);
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct DBusDictEntry {
     /// Key must be a basic type, not a container type.
     pub key: SingleCompleteTypeSignature,
@@ -39,85 +83,20 @@ pub struct DBusDictEntry {
     pub value: Box<Type>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct DBusArray {
     pub item_type: SingleCompleteTypeSignature,
     pub items: Vec<Type>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct DBusStruct {
     pub fields: Vec<Type>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct DBusVariant {
     pub variant: Box<Type>,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusByte {
-    pub u8: u8,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusBoolean {
-    pub bool: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusInt16 {
-    pub i16: i16,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusUint16 {
-    pub u16: u16,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusInt32 {
-    pub i32: i32,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusUint32 {
-    pub u32: u32,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusInt64 {
-    pub i64: i64,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusUint64 {
-    pub u64: u64,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusDouble {
-    pub f64: f64,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusString {
-    pub string: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusObjectPath {
-    pub dbus_string: DBusString,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusSignature {
-    pub vec: Vec<SingleCompleteTypeSignature>,
-}
-
-#[derive(Debug, Clone)]
-pub struct DBusUnixFileDescriptor {
-    // Todo
 }
 
 impl DBusString {
@@ -156,21 +135,6 @@ impl From<ContainerType> for Type {
     }
 }
 
-macro_rules! impl_from_basictype {
-    ($dbustype:ident, $variant:expr) => {
-        impl From<$dbustype> for BasicType {
-            fn from(dbustype: $dbustype) -> BasicType {
-                $variant(dbustype)
-            }
-        }
-        impl From<$dbustype> for Type {
-            fn from(dbustype: $dbustype) -> Type {
-                Type::Basic($variant(dbustype))
-            }
-        }
-    };
-}
-
 macro_rules! impl_from_containertype {
     ($dbustype:ident, $variant:expr) => {
         impl From<$dbustype> for ContainerType {
@@ -185,20 +149,6 @@ macro_rules! impl_from_containertype {
         }
     };
 }
-
-impl_from_basictype!(DBusByte, BasicType::Byte);
-impl_from_basictype!(DBusBoolean, BasicType::Boolean);
-impl_from_basictype!(DBusInt16, BasicType::Int16);
-impl_from_basictype!(DBusUint16, BasicType::Uint16);
-impl_from_basictype!(DBusInt32, BasicType::Int32);
-impl_from_basictype!(DBusUint32, BasicType::Uint32);
-impl_from_basictype!(DBusInt64, BasicType::Int64);
-impl_from_basictype!(DBusUint64, BasicType::Uint64);
-impl_from_basictype!(DBusDouble, BasicType::Double);
-impl_from_basictype!(DBusString, BasicType::String);
-impl_from_basictype!(DBusObjectPath, BasicType::ObjectPath);
-impl_from_basictype!(DBusSignature, BasicType::Signature);
-impl_from_basictype!(DBusUnixFileDescriptor, BasicType::UnixFileDescriptor);
 
 impl_from_containertype!(DBusArray, ContainerType::Array);
 impl_from_containertype!(DBusStruct, ContainerType::Struct);

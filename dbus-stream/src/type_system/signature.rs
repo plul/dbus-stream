@@ -19,7 +19,7 @@ trait ToSignature {
 }
 
 /// Signature for a "Single Complete Type".
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd)]
 pub enum SingleCompleteTypeSignature {
     Byte,
     Boolean,
@@ -190,19 +190,19 @@ impl ToSignature for BasicType {
     /// Return signature for this basic type.
     fn signature(&self) -> SingleCompleteTypeSignature {
         match self {
-            BasicType::Byte(_) => SingleCompleteTypeSignature::Byte,
-            BasicType::Boolean(_) => SingleCompleteTypeSignature::Boolean,
-            BasicType::Int16(_) => SingleCompleteTypeSignature::Int16,
-            BasicType::Uint16(_) => SingleCompleteTypeSignature::Uint16,
-            BasicType::Int32(_) => SingleCompleteTypeSignature::Int32,
-            BasicType::Uint32(_) => SingleCompleteTypeSignature::Uint32,
-            BasicType::Int64(_) => SingleCompleteTypeSignature::Int64,
-            BasicType::Uint64(_) => SingleCompleteTypeSignature::Uint64,
-            BasicType::Double(_) => SingleCompleteTypeSignature::Double,
-            BasicType::String(_) => SingleCompleteTypeSignature::String,
-            BasicType::ObjectPath(_) => SingleCompleteTypeSignature::ObjectPath,
-            BasicType::Signature(_) => SingleCompleteTypeSignature::Signature,
-            BasicType::UnixFileDescriptor(_) => SingleCompleteTypeSignature::UnixFileDescriptor,
+            BasicType::DBusByte(_) => SingleCompleteTypeSignature::Byte,
+            BasicType::DBusBoolean(_) => SingleCompleteTypeSignature::Boolean,
+            BasicType::DBusInt16(_) => SingleCompleteTypeSignature::Int16,
+            BasicType::DBusUint16(_) => SingleCompleteTypeSignature::Uint16,
+            BasicType::DBusInt32(_) => SingleCompleteTypeSignature::Int32,
+            BasicType::DBusUint32(_) => SingleCompleteTypeSignature::Uint32,
+            BasicType::DBusInt64(_) => SingleCompleteTypeSignature::Int64,
+            BasicType::DBusUint64(_) => SingleCompleteTypeSignature::Uint64,
+            BasicType::DBusDouble(_) => SingleCompleteTypeSignature::Double,
+            BasicType::DBusString(_) => SingleCompleteTypeSignature::String,
+            BasicType::DBusObjectPath(_) => SingleCompleteTypeSignature::ObjectPath,
+            BasicType::DBusSignature(_) => SingleCompleteTypeSignature::Signature,
+            BasicType::DBusUnixFileDescriptor(_) => SingleCompleteTypeSignature::UnixFileDescriptor,
         }
     }
 }

@@ -78,19 +78,19 @@ impl Marshall<Type> for Marshaller {
 impl Marshall<BasicType> for Marshaller {
     fn marshall_be(&mut self, t: &BasicType) -> crate::Result<()> {
         match t {
-            BasicType::Byte(inner) => self.marshall_be(inner),
-            BasicType::Boolean(inner) => self.marshall_be(inner),
-            BasicType::Int16(inner) => self.marshall_be(inner),
-            BasicType::Uint16(inner) => self.marshall_be(inner),
-            BasicType::Int32(inner) => self.marshall_be(inner),
-            BasicType::Uint32(inner) => self.marshall_be(inner),
-            BasicType::Int64(inner) => self.marshall_be(inner),
-            BasicType::Uint64(inner) => self.marshall_be(inner),
-            BasicType::Double(inner) => self.marshall_be(inner),
-            BasicType::String(inner) => self.marshall_be(inner),
-            BasicType::ObjectPath(inner) => self.marshall_be(inner),
-            BasicType::Signature(inner) => self.marshall_be(inner),
-            BasicType::UnixFileDescriptor(inner) => self.marshall_be(inner),
+            BasicType::DBusByte(inner) => self.marshall_be(inner),
+            BasicType::DBusBoolean(inner) => self.marshall_be(inner),
+            BasicType::DBusInt16(inner) => self.marshall_be(inner),
+            BasicType::DBusUint16(inner) => self.marshall_be(inner),
+            BasicType::DBusInt32(inner) => self.marshall_be(inner),
+            BasicType::DBusUint32(inner) => self.marshall_be(inner),
+            BasicType::DBusInt64(inner) => self.marshall_be(inner),
+            BasicType::DBusUint64(inner) => self.marshall_be(inner),
+            BasicType::DBusDouble(inner) => self.marshall_be(inner),
+            BasicType::DBusString(inner) => self.marshall_be(inner),
+            BasicType::DBusObjectPath(inner) => self.marshall_be(inner),
+            BasicType::DBusSignature(inner) => self.marshall_be(inner),
+            BasicType::DBusUnixFileDescriptor(inner) => self.marshall_be(inner),
         }
     }
 }
