@@ -209,7 +209,47 @@ impl DBusObjectPath {
 
 impl DBusSignature {
     fn unmarshall_be(i: &[u8]) -> IResult<&[u8], Self> {
-        todo!("Dani");
+        fn unmarshall_basic_type(b: u8) -> SingleCompleteTypeSignature {
+            match b {
+                b'y' => SingleCompleteTypeSignature::Byte,
+                b'b' => SingleCompleteTypeSignature::Boolean,
+                b'n' => SingleCompleteTypeSignature::Int16,
+                b'q' => SingleCompleteTypeSignature::Uint16,
+                b'i' => SingleCompleteTypeSignature::Int32,
+                b'u' => SingleCompleteTypeSignature::Uint32,
+                b'x' => SingleCompleteTypeSignature::Int64,
+                b't' => SingleCompleteTypeSignature::Uint64,
+                b'd' => SingleCompleteTypeSignature::Double,
+                b's' => SingleCompleteTypeSignature::String,
+                b'o' => SingleCompleteTypeSignature::ObjectPath,
+                b'h' => SingleCompleteTypeSignature::UnixFileDescriptor,
+                _ => todo!("Dani"),
+            }
+        }
+
+        let (i, length): (&[u8], u8) = be_u8(i)?;
+
+        let mut v: Vec<SingleCompleteTypeSignature> = Vec::new();
+        let mut pos: u8 = 0;
+        while pos < length {
+            let b: u8 = i[pos as usize];
+            if b == b'a' {
+                // Array
+                todo!("Dani");
+            } else if b == b'(' {
+                // Struct
+                todo!("Dani");
+            } else if b == b'{' {
+                // Dict
+                todo!("Dani");
+            } else {
+                v.push(unmarshall_basic_type(b));
+
+                pos += 1;
+            }
+        }
+
+        Ok((i, Self { vec: v }))
     }
 }
 
@@ -224,7 +264,92 @@ impl DBusArray {
         i: &'a [u8],
         item_type: &SingleCompleteTypeSignature,
     ) -> IResult<&'a [u8], Self> {
-        todo!("Dani? These container types may be a little harder");
+        let (i, length): (&[u8], u32) = be_u32(i)?;
+
+        // If the element's size is greater than the size of the length
+        // field, some padding is present.
+        let mut padding: usize = 0;
+        let size: usize = item_type.marshalling_boundary();
+        if size > 4 {
+            padding = 4 % size;
+        }
+
+        // Skip the padding.
+        // TODO: Check that the padding is present and throw an error otherwise.
+        let i: &[u8] = &i[padding..];
+
+        let mut dba: Self = Self::new(item_type.clone());
+        match item_type {
+            SingleCompleteTypeSignature::Byte => {
+                for pos in 0..length as usize {
+                    let (_, b) = DBusByte::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::Boolean => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusBoolean::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::Int16 => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusInt16::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::Uint16 => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusUint16::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::Int32 => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusInt32::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::Uint32 => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusUint32::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::Int64 => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusInt64::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::Uint64 => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusUint64::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::Double => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusDouble::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::String => {
+                for pos in (0..length as usize).step_by(size) {
+                    let (_, b) = DBusString::unmarshall_be(&i[pos..])?;
+                    dba.push(BasicType::from(b));
+                }
+            }
+            SingleCompleteTypeSignature::ObjectPath => todo!("Dani"),
+            SingleCompleteTypeSignature::Signature => todo!("Dani"),
+            SingleCompleteTypeSignature::UnixFileDescriptor => todo!("Dani"),
+            SingleCompleteTypeSignature::Array(_) => todo!("Dani"),
+            SingleCompleteTypeSignature::Struct { fields: _ } => todo!("Dani"),
+            SingleCompleteTypeSignature::Variant => todo!("Dani"),
+            SingleCompleteTypeSignature::Map { key: _, value: _ } => todo!("Dani"),
+        };
+
+        Ok((i, dba))
     }
 }
 
@@ -265,5 +390,52 @@ impl MessageType {
             4 => Some(MessageType::Signal),
             _ => None,
         })(i)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unmarshall_array_of_bytes() {
+        let a: [u8; 7] = [0, 0, 0, 3, 15, 16, 17];
+        let b: [DBusByte; 3] = [
+            DBusByte { u8: 15 },
+            DBusByte { u8: 16 },
+            DBusByte { u8: 17 },
+        ];
+
+        // TODO: Not sure how to get around the `unwrap` call.
+        let (_, dba) = DBusArray::unmarshall_be(&a, &SingleCompleteTypeSignature::Byte).unwrap();
+
+        assert_eq!(b.len(), dba.items.len());
+        for (idx, e) in dba.items.iter().enumerate() {
+            // TODO: Is there a way to use only one `if let` statement?
+            if let Type::Basic(bt) = e {
+                if let BasicType::Byte(dbb) = bt {
+                    assert_eq!(dbb.u8, b[idx].u8);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn unmarshall_basic_signature() {
+        let a: [u8; 10] = [9, b'y', b'b', b'n', b'q', b'i', b'u', b'x', b't', b'd'];
+
+        // TODO: Not sure how to get around the `unwrap` call.
+        let (_, x) = DBusSignature::unmarshall_be(&a).unwrap();
+
+        assert_eq!(x.vec.len(), 9);
+        assert_eq!(x.vec[0], SingleCompleteTypeSignature::Byte);
+        assert_eq!(x.vec[1], SingleCompleteTypeSignature::Boolean);
+        assert_eq!(x.vec[2], SingleCompleteTypeSignature::Int16);
+        assert_eq!(x.vec[3], SingleCompleteTypeSignature::Uint16);
+        assert_eq!(x.vec[4], SingleCompleteTypeSignature::Int32);
+        assert_eq!(x.vec[5], SingleCompleteTypeSignature::Uint32);
+        assert_eq!(x.vec[6], SingleCompleteTypeSignature::Int64);
+        assert_eq!(x.vec[7], SingleCompleteTypeSignature::Uint64);
+        assert_eq!(x.vec[8], SingleCompleteTypeSignature::Double);
     }
 }
