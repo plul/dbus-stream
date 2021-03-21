@@ -406,11 +406,10 @@ mod tests {
 
         assert_eq!(b.len(), dba.items.len());
         for (idx, e) in dba.items.iter().enumerate() {
-            // TODO: Is there a way to use only one `if let` statement?
-            if let Type::Basic(bt) = e {
-                if let BasicType::Byte(dbb) = bt {
-                    assert_eq!(dbb.u8, b[idx].u8);
-                }
+            if let Type::Basic(BasicType::Byte(dbb)) = e {
+                assert_eq!(dbb.u8, b[idx].u8);
+            } else {
+                panic!();
             }
         }
     }
