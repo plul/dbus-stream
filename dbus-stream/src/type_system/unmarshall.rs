@@ -264,19 +264,14 @@ impl DBusArray {
         i: &'a [u8],
         item_type: &SingleCompleteTypeSignature,
     ) -> IResult<&'a [u8], Self> {
-        let (i, length): (&[u8], u32) = be_u32(i)?;
+        let (mut i, length): (&[u8], u32) = be_u32(i)?;
 
         // If the element's size is greater than the size of the length
         // field, some padding is present.
-        let mut padding: usize = 0;
         let size: usize = item_type.marshalling_boundary();
         if size > 4 {
-            padding = 4 % size;
+            i = tag(vec![0; 4 % size].as_slice())(i)?.0;
         }
-
-        // Skip the padding.
-        // TODO: Check that the padding is present and throw an error otherwise.
-        let i: &[u8] = &i[padding..];
 
         let mut dba: Self = Self::new(item_type.clone());
         match item_type {
