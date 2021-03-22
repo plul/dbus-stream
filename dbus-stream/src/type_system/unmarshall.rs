@@ -581,7 +581,6 @@ mod tests {
             DBusByte { u8: 17 },
         ];
 
-        // TODO: Not sure how to get around the `unwrap` call.
         let (_, dba) = DBusArray::unmarshall_be(&a, &SingleCompleteTypeSignature::DBusByte).unwrap();
 
         assert_eq!(b.len(), dba.items.len());
@@ -598,7 +597,6 @@ mod tests {
     fn unmarshall_basic_signature() {
         let a: [u8; 10] = [9, b'y', b'b', b'n', b'q', b'i', b'u', b'x', b't', b'd'];
 
-        // TODO: Not sure how to get around the `unwrap` call.
         let (_, x) = DBusSignature::unmarshall_be(&a).unwrap();
 
         assert_eq!(x.vec.len(), 9);
