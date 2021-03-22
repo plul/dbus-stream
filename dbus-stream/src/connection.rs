@@ -94,11 +94,11 @@ impl Connection {
     /// Send marshalled message.
     async fn send_message(&mut self, message: &Message) -> crate::Result<()> {
         log::debug!("Marshalling message");
-        let marshalled = message.marshall_be()?;
+        let marshalled = message.marshal_be()?;
 
         // debug_assert_eq!(
         //     message,
-        //     &crate::type_system::unmarshall::unmarshall_message(&marshalled)?
+        //     &crate::type_system::unmarshall::unmarshal_message(&marshalled)?
         // );
 
         log::debug!("Transmitting message");
@@ -115,7 +115,7 @@ impl Connection {
         let mut buf = [1; 1];
         self.reader.read_exact(&mut buf).await?;
         dbg!(buf);
-        todo!("Complete this. Read and unmarshall the whole message");
+        todo!("Complete this. Read and unmarshal the whole message");
 
         Ok(())
     }
