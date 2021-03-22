@@ -3,7 +3,23 @@ use std::iter::Enumerate;
 use std::ops::RangeFrom;
 use std::slice::Iter;
 
-use nom::bytes::complete::tag;
+use nom::combinator::verify;
+use nom::number::complete::be_u8;
+
+/// Eat a single null byte.
+///
+/// The null byte is not returned.
+fn skip_null_byte<I, E>(input: I) -> Result<I, nom::Err<E>>
+where
+    I: nom::Slice<RangeFrom<usize>>,
+    I: nom::InputIter<Item = u8>,
+    I: nom::InputLength,
+    I: Clone,
+    E: nom::error::ParseError<I>,
+{
+    let (input, _) = verify(be_u8, |&byte| byte == 0x00)(input)?;
+    Ok(input)
+}
 
 /// A wrapper over `&[u8]` but with the ability to keep track global alignment.
 #[derive(Copy, Clone, Debug)]
@@ -15,6 +31,9 @@ pub struct Decoder<'a> {
     original_data: &'a [u8],
 
     /// Slice that is chipped away at, like a normal input as it passes through nom parsers.
+    ///
+    /// This data slice must only shrink from the front, because we rely on the difference in
+    /// length between this and the original slice, to determine the relative alignment.
     data: &'a [u8],
 }
 
@@ -34,15 +53,19 @@ impl<'a> Decoder<'a> {
         self,
         boundary: usize,
     ) -> Result<Decoder<'a>, nom::Err<nom::error::Error<Decoder<'a>>>> {
-        let i = self;
+        let mut i = self;
 
         // Don't really expect to need this for other boundaries than 2, 4 and 8.
         debug_assert!([1, 2, 4, 8].contains(&boundary), "Sanity check");
 
         // Original slice is guaranteed to start on 8-byte boundary.
-        let offset = while (i.original_data.len() - i.data.len()) % boundary != 0 {
-            // Eat a null byte.
-            let (i, _) = tag(&[0])(i)?;
+        // Eat null bytes until the lengths of the slices module the boundary is zero.
+        //
+        // Example: If the original slice has a length of 40, and the data slice that is worked on
+        // has a length of 28, then we are at a 4 byte boundary, because 40-28=12 is divisible by 4.
+        // On the other hand, we would have to eat 4 more padding bytes to arrive at an 8-byte boundary.
+        while (i.original_data.len() - i.data.len()) % boundary != 0 {
+            i = skip_null_byte(i)?;
         };
 
         Ok(i)
