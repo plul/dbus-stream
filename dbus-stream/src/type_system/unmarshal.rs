@@ -1,10 +1,12 @@
 use std::iter::Iterator;
 
+use nom::{branch::alt, multi::many0, sequence::{pair, preceded}};
 use nom::bytes::complete::tag;
 use nom::bytes::complete::take;
 use nom::combinator::all_consuming;
 use nom::combinator::map_opt;
 use nom::combinator::map_res;
+use nom::combinator::value;
 use nom::number::complete::be_f64;
 use nom::number::complete::be_i16;
 use nom::number::complete::be_i32;
@@ -14,6 +16,7 @@ use nom::number::complete::be_u32;
 use nom::number::complete::be_u64;
 use nom::number::complete::be_u8;
 use nom::number::complete::le_u32;
+use nom::sequence::delimited;
 use nom::Finish;
 use nom::IResult;
 
@@ -67,6 +70,49 @@ impl Unmarshal for DBusBoolean {
         let unmarshalled: Self = Self { bool };
 
         Ok((i, unmarshalled))
+    }
+}
+
+impl Unmarshal for DBusSignature {
+    fn unmarshal_be<'a>(i: Decoder<'a>) -> IResult<Decoder<'a>, Self> {
+        let parse_byte = value(SingleCompleteTypeSignature::DBusByte, tag(b"y"));
+        let parse_boolean = value(SingleCompleteTypeSignature::DBusBoolean, tag(b"b"));
+        let parse_int16 = value(SingleCompleteTypeSignature::DBusInt16, tag(b"n"));
+        let parse_uint16 = value(SingleCompleteTypeSignature::DBusUint16, tag(b"q"));
+        let parse_int32 = value(SingleCompleteTypeSignature::DBusInt32, tag(b"i"));
+        let parse_uint32 = value(SingleCompleteTypeSignature::DBusUint32, tag(b"u"));
+        let parse_int64 = value(SingleCompleteTypeSignature::DBusInt64, tag(b"x"));
+        let parse_uint64 = value(SingleCompleteTypeSignature::DBusUint64, tag(b"t"));
+        let parse_double = value(SingleCompleteTypeSignature::DBusDouble, tag(b"d"));
+        let parse_string = value(SingleCompleteTypeSignature::DBusString, tag(b"s"));
+        let parse_objectpath = value(SingleCompleteTypeSignature::DBusObjectPath, tag(b"o"));
+        let parse_unixfiledescriptor = value(
+            SingleCompleteTypeSignature::DBusUnixFileDescriptor,
+            tag(b"h"),
+        );
+        let parse_struct = delimited(tag(b"("), DBusSignature::unmarshal_be, tag(b")"));
+        let parse_variant = value(SingleCompleteTypeSignature::DBusVariant, tag(b"v"));
+        let parse_array = preceded(tag(b"a"), alt((parse_single_complete_type_except_dictentry, parse_dict_entry)));
+        let parse_dict_entry = delimited(tag(b"{"), pair(parse_basic_type, parse_single_complete_type_except_dictentry), tag(b"}"));
+
+        let parse_basic_type = alt((
+            parse_byte,
+            parse_boolean,
+            parse_int16,
+            parse_uint16,
+            parse_int32,
+            parse_uint32,
+            parse_int64,
+            parse_uint64,
+            parse_double,
+            parse_string,
+            parse_objectpath,
+            parse_unixfiledescriptor,
+        ));
+
+        let parse_single_complete_type_except_dictentry = alt((parse_basic_type, parse_struct, parse_variant, parse_array));
+
+        let (i, parsed) = many0(parse_single_complete_type_except_dictentry)(i)?;
     }
 }
 
