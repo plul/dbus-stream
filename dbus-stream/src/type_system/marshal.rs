@@ -51,12 +51,12 @@ impl Encoder {
 
         self.buf.extend_from_slice(&[0; N]);
 
-        let closure = move |Encoder: &mut Encoder, values: [u8; N]| {
+        let closure = move |encoder: &mut Encoder, values: [u8; N]| {
             let new_values_iter = std::array::IntoIter::new(values);
             let range = idx..idx + N;
 
             // Replace:
-            for old_value in Encoder.buf.splice(range, new_values_iter) {
+            for old_value in encoder.buf.splice(range, new_values_iter) {
                 // These are the values being evicted from the vec.
                 // These should be zero, that's what we set them to above.
                 debug_assert_eq!(old_value, 0);
