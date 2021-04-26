@@ -141,10 +141,10 @@ impl Connection {
 
     /// Spec requires us to say hello on new connections immediately after AUTH.
     async fn say_hello(&mut self) -> crate::Result<()> {
-        let destination = DBusString::new("org.freedesktop.DBus")?;
-        let path = DBusObjectPath::new("/org/freedesktop/DBus")?;
-        let interface = DBusString::new("org.freedesktop.DBus")?;
-        let member = DBusString::new("Hello")?;
+        let destination = DBusString::from("org.freedesktop.DBus");
+        let path = DBusObjectPath::from("/org/freedesktop/DBus");
+        let interface = DBusString::from("org.freedesktop.DBus");
+        let member = DBusString::from("Hello");
 
         let body = Body { arguments: vec![] };
 

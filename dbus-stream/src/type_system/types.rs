@@ -54,6 +54,12 @@ macro_rules! basic_type {
                     Type::Basic(BasicType::from(x))
                 }
             }
+
+            impl<T> From<T> for $name where $inner_type: From<T> {
+                fn from(x: T) -> Self {
+                    Self { $field_name: <$inner_type>::from(x) }
+                }
+            }
         )*
     };
 }
@@ -97,30 +103,6 @@ pub struct DBusStruct {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct DBusVariant {
     pub variant: Box<Type>,
-}
-
-impl DBusString {
-    pub fn new<T>(t: T) -> crate::Result<Self>
-    where
-        T: Into<String>,
-    {
-        // TODO: As soon as there are more stringent checking done for this type, this may need to change.
-        let s = Self { string: t.into() };
-        Ok(s)
-    }
-}
-
-impl DBusObjectPath {
-    pub fn new<T>(t: T) -> crate::Result<Self>
-    where
-        T: Into<String>,
-    {
-        // TODO: As soon as there are more stringent checking done for this type, this may need to change.
-        let s = Self {
-            dbus_string: DBusString::new(t)?,
-        };
-        Ok(s)
-    }
 }
 
 impl From<BasicType> for Type {
@@ -169,12 +151,6 @@ impl DBusVariant {
         Self {
             variant: Box::new(variant.into()),
         }
-    }
-}
-
-impl DBusByte {
-    pub fn new(u8: u8) -> Self {
-        Self { u8 }
     }
 }
 

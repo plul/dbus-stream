@@ -88,7 +88,7 @@ fn prepare_header_fields<T: IntoIterator<Item = HeaderField>>(header_fields: T) 
     let mut array = DBusArray::new(HEADER_FIELD_SIGNATURE.clone());
 
     for header_field in header_fields {
-        let byte: DBusByte = DBusByte::new(header_field.decimal_code());
+        let byte: DBusByte = DBusByte::from(header_field.decimal_code());
         let variant: DBusVariant = header_field.inner_into_variant();
         let header_field_struct = DBusStruct::new(vec![byte.into(), variant.into()]);
 
@@ -258,9 +258,9 @@ mod tests {
             flag_allow_interactive_authorization: true,
             serial: NonZeroU32::new(1).unwrap(),
             message_type_param: MessageTypeParam::MethodCall(MethodCall {
-                path: DBusObjectPath::new("path")?,
-                interface: Some(DBusString::new("interface")?),
-                member: DBusString::new("member")?,
+                path: DBusObjectPath::from("path"),
+                interface: Some(DBusString::from("interface")),
+                member: DBusString::from("member"),
             }),
             destination: None,
             body: Body::default(),
