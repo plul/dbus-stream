@@ -92,7 +92,7 @@ fn prepare_header_fields<T: IntoIterator<Item = HeaderField>>(header_fields: T) 
         let variant: DBusVariant = header_field.inner_into_variant();
         let header_field_struct = DBusStruct::new(vec![byte.into(), variant.into()]);
 
-        array.push(header_field_struct);
+        array.items.push(Type::from(header_field_struct));
     }
 
     array

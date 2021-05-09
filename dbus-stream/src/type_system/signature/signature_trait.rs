@@ -1,8 +1,7 @@
+//! [Signature] trait to get a [SingleCompleteTypeSignature] for a type.
+
 use super::SingleCompleteTypeSignature;
-/// [Signature] trait to get a [SingleCompleteTypeSignature] for a type.
 use crate::type_system::types::*;
-use crate::type_system::BasicType;
-use crate::type_system::ContainerType;
 use crate::type_system::Type;
 
 pub trait Signature {
@@ -13,44 +12,27 @@ impl Signature for Type {
     /// Return signature for this type.
     fn signature(&self) -> SingleCompleteTypeSignature {
         match self {
-            Type::Basic(inner) => inner.signature(),
-            Type::Container(inner) => inner.signature(),
+            Type::Byte(inner) => inner.signature(),
+            Type::Boolean(inner) => inner.signature(),
+            Type::Int16(inner) => inner.signature(),
+            Type::Uint16(inner) => inner.signature(),
+            Type::Int32(inner) => inner.signature(),
+            Type::Uint32(inner) => inner.signature(),
+            Type::Int64(inner) => inner.signature(),
+            Type::Uint64(inner) => inner.signature(),
+            Type::Double(inner) => inner.signature(),
+            Type::String(inner) => inner.signature(),
+            Type::ObjectPath(inner) => inner.signature(),
+            Type::Signature(inner) => inner.signature(),
+            Type::UnixFileDescriptor(inner) => inner.signature(),
+            Type::Array(inner) => inner.signature(),
+            Type::Struct(inner) => inner.signature(),
+            Type::Variant(inner) => inner.signature(),
+            Type::DictEntry(inner) => inner.signature(),
         }
     }
 }
 
-impl Signature for BasicType {
-    /// Return signature for this basic type.
-    fn signature(&self) -> SingleCompleteTypeSignature {
-        match self {
-            BasicType::DBusByte(inner) => inner.signature(),
-            BasicType::DBusBoolean(inner) => inner.signature(),
-            BasicType::DBusInt16(inner) => inner.signature(),
-            BasicType::DBusUint16(inner) => inner.signature(),
-            BasicType::DBusInt32(inner) => inner.signature(),
-            BasicType::DBusUint32(inner) => inner.signature(),
-            BasicType::DBusInt64(inner) => inner.signature(),
-            BasicType::DBusUint64(inner) => inner.signature(),
-            BasicType::DBusDouble(inner) => inner.signature(),
-            BasicType::DBusString(inner) => inner.signature(),
-            BasicType::DBusObjectPath(inner) => inner.signature(),
-            BasicType::DBusSignature(inner) => inner.signature(),
-            BasicType::DBusUnixFileDescriptor(inner) => inner.signature(),
-        }
-    }
-}
-
-impl Signature for ContainerType {
-    /// Return signature for this container type.
-    fn signature(&self) -> SingleCompleteTypeSignature {
-        match self {
-            ContainerType::DBusArray(inner) => inner.signature(),
-            ContainerType::DBusStruct(inner) => inner.signature(),
-            ContainerType::DBusVariant(inner) => inner.signature(),
-            ContainerType::DBusDictEntry(inner) => inner.signature(),
-        }
-    }
-}
 
 /// Implement [Signature] for simple types.
 macro_rules! impl_to_signature {

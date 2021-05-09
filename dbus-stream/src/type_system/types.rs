@@ -2,16 +2,23 @@ use super::signature::*;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Type {
-    Basic(BasicType),
-    Container(ContainerType),
-}
-
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum ContainerType {
-    DBusArray(DBusArray),
-    DBusStruct(DBusStruct),
-    DBusVariant(DBusVariant),
-    DBusDictEntry(DBusDictEntry),
+    Byte(DBusByte),
+    Boolean(DBusBoolean),
+    Int16(DBusInt16),
+    Uint16(DBusUint16),
+    Int32(DBusInt32),
+    Uint32(DBusUint32),
+    Int64(DBusInt64),
+    Uint64(DBusUint64),
+    Double(DBusDouble),
+    String(DBusString),
+    ObjectPath(DBusObjectPath),
+    Signature(DBusSignature),
+    UnixFileDescriptor(DBusUnixFileDescriptor),
+    Array(DBusArray),
+    Struct(DBusStruct),
+    Variant(DBusVariant),
+    DictEntry(DBusDictEntry),
 }
 
 /// Macro to create the primitive (basic) DBus types, that are modelled as just simple wrappers over a native Rust type.
@@ -26,33 +33,11 @@ macro_rules! basic_type {
         // ...zero or more times
         *
     ) => {
-        #[derive(Debug, Clone, PartialEq, PartialOrd)]
-        pub enum BasicType {
-            // Loop over the variants to build the enum:
-            $(
-                $name($name),
-            )*
-        }
-
         // Create the individual wrapper types
         $(
             #[derive(Debug, Clone, PartialEq, PartialOrd)]
             pub struct $name {
                 pub $field_name: $inner_type
-            }
-
-            /// Wrap it in [BasicType].
-            impl From<$name> for BasicType {
-                fn from(x: $name) -> BasicType {
-                    BasicType::$name(x)
-                }
-            }
-
-            /// Wrap it in [Type].
-            impl From<$name> for Type {
-                fn from(x: $name) -> Type {
-                    Type::Basic(BasicType::from(x))
-                }
             }
 
             impl<T> From<T> for $name where $inner_type: From<T> {
@@ -81,6 +66,7 @@ basic_type!(
     [DBusUnixFileDescriptor, u32, u32]
 );
 
+
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct DBusDictEntry {
     /// Key must be a basic type, not a container type.
@@ -105,39 +91,6 @@ pub struct DBusVariant {
     pub variant: Box<Type>,
 }
 
-impl From<BasicType> for Type {
-    fn from(basic_type: BasicType) -> Type {
-        Type::Basic(basic_type)
-    }
-}
-
-impl From<ContainerType> for Type {
-    fn from(container_type: ContainerType) -> Type {
-        Type::Container(container_type)
-    }
-}
-
-macro_rules! impl_containertype {
-    ($name:ident) => {
-        impl From<$name> for ContainerType {
-            fn from(x: $name) -> ContainerType {
-                ContainerType::$name(x)
-            }
-        }
-
-        impl From<$name> for Type {
-            fn from(x: $name) -> Type {
-                Type::Container(ContainerType::from(x))
-            }
-        }
-    };
-}
-
-impl_containertype!(DBusArray);
-impl_containertype!(DBusStruct);
-impl_containertype!(DBusVariant);
-impl_containertype!(DBusDictEntry);
-
 impl DBusStruct {
     pub fn new<T: Into<Vec<Type>>>(fields: T) -> Self {
         Self {
@@ -161,8 +114,33 @@ impl DBusArray {
             items: Vec::new(),
         }
     }
+}
 
-    pub fn push<T: Into<Type>>(&mut self, item: T) {
-        self.items.push(item.into());
+
+macro_rules! impl_from_type_variant {
+    ($name:ident, $type_variant:ident) => {
+        impl From<$name> for Type {
+            fn from(x: $name) -> Type {
+                Type::$type_variant(x)
+            }
+        }
     }
 }
+
+impl_from_type_variant!(DBusByte, Byte);
+impl_from_type_variant!(DBusBoolean, Boolean);
+impl_from_type_variant!(DBusInt16, Int16);
+impl_from_type_variant!(DBusUint16, Uint16);
+impl_from_type_variant!(DBusInt32, Int32);
+impl_from_type_variant!(DBusUint32, Uint32);
+impl_from_type_variant!(DBusInt64, Int64);
+impl_from_type_variant!(DBusUint64, Uint64);
+impl_from_type_variant!(DBusDouble, Double);
+impl_from_type_variant!(DBusString, String);
+impl_from_type_variant!(DBusObjectPath, ObjectPath);
+impl_from_type_variant!(DBusSignature, Signature);
+impl_from_type_variant!(DBusUnixFileDescriptor, UnixFileDescriptor);
+impl_from_type_variant!(DBusArray, Array);
+impl_from_type_variant!(DBusStruct, Struct);
+impl_from_type_variant!(DBusVariant, Variant);
+impl_from_type_variant!(DBusDictEntry, DictEntry);

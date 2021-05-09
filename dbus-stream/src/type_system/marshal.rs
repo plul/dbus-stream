@@ -70,39 +70,23 @@ impl Encoder {
 impl Marshal<Type> for Encoder {
     fn marshal_be(&mut self, t: &Type) -> crate::Result<()> {
         match t {
-            Type::Basic(inner) => self.marshal_be(inner),
-            Type::Container(inner) => self.marshal_be(inner),
-        }
-    }
-}
-
-impl Marshal<BasicType> for Encoder {
-    fn marshal_be(&mut self, t: &BasicType) -> crate::Result<()> {
-        match t {
-            BasicType::DBusByte(inner) => self.marshal_be(inner),
-            BasicType::DBusBoolean(inner) => self.marshal_be(inner),
-            BasicType::DBusInt16(inner) => self.marshal_be(inner),
-            BasicType::DBusUint16(inner) => self.marshal_be(inner),
-            BasicType::DBusInt32(inner) => self.marshal_be(inner),
-            BasicType::DBusUint32(inner) => self.marshal_be(inner),
-            BasicType::DBusInt64(inner) => self.marshal_be(inner),
-            BasicType::DBusUint64(inner) => self.marshal_be(inner),
-            BasicType::DBusDouble(inner) => self.marshal_be(inner),
-            BasicType::DBusString(inner) => self.marshal_be(inner),
-            BasicType::DBusObjectPath(inner) => self.marshal_be(inner),
-            BasicType::DBusSignature(inner) => self.marshal_be(inner),
-            BasicType::DBusUnixFileDescriptor(inner) => self.marshal_be(inner),
-        }
-    }
-}
-
-impl Marshal<ContainerType> for Encoder {
-    fn marshal_be(&mut self, t: &ContainerType) -> crate::Result<()> {
-        match t {
-            ContainerType::DBusArray(inner) => self.marshal_be(inner),
-            ContainerType::DBusStruct(inner) => self.marshal_be(inner),
-            ContainerType::DBusVariant(inner) => self.marshal_be(inner),
-            ContainerType::DBusDictEntry(inner) => self.marshal_be(inner),
+            Type::Byte(inner) => self.marshal_be(inner),
+            Type::Boolean(inner) => self.marshal_be(inner),
+            Type::Int16(inner) => self.marshal_be(inner),
+            Type::Uint16(inner) => self.marshal_be(inner),
+            Type::Int32(inner) => self.marshal_be(inner),
+            Type::Uint32(inner) => self.marshal_be(inner),
+            Type::Int64(inner) => self.marshal_be(inner),
+            Type::Uint64(inner) => self.marshal_be(inner),
+            Type::Double(inner) => self.marshal_be(inner),
+            Type::String(inner) => self.marshal_be(inner),
+            Type::ObjectPath(inner) => self.marshal_be(inner),
+            Type::Signature(inner) => self.marshal_be(inner),
+            Type::UnixFileDescriptor(inner) => self.marshal_be(inner),
+            Type::Array(inner) => self.marshal_be(inner),
+            Type::Struct(inner) => self.marshal_be(inner),
+            Type::Variant(inner) => self.marshal_be(inner),
+            Type::DictEntry(inner) => self.marshal_be(inner),
         }
     }
 }

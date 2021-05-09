@@ -173,6 +173,7 @@ impl DBusSignature {
     }
 }
 
+
 /// Unmarshal a DBus message (consisting of header and body),
 pub fn unmarshal_message(message: &[u8]) -> crate::Result<Message> {
     let (_i, message) = all_consuming(unmarshal_message_inner)(I::new(message))
@@ -223,7 +224,7 @@ fn unmarshal_message_inner<'i>(i: I<'i>) -> IResult<I<'i>, Message> {
     };
     // Unpack unmarshalled type.
     let header_field_array: DBusArray = match header_field_array {
-        Type::Container(ContainerType::DBusArray(dbus_array)) => dbus_array,
+        Type::Array(dbus_array) => dbus_array,
         _ => unreachable!(),
     };
 
@@ -431,13 +432,13 @@ mod tests {
         ];
 
         let dba: DBusArray = match SingleCompleteTypeSignature::DBusArray(Box::new(SingleCompleteTypeSignature::DBusByte)).unmarshal(&a, Endianness::BigEndian).unwrap() {
-            Type::Container(ContainerType::DBusArray(dbus_array)) => dbus_array,
+            Type::Array(dbus_array) => dbus_array,
             _ => panic!(),
         };
 
         assert_eq!(b.len(), dba.items.len());
         for (idx, e) in dba.items.iter().enumerate() {
-            if let Type::Basic(BasicType::DBusByte(dbb)) = e {
+            if let Type::Byte(dbb) = e {
                 assert_eq!(dbb.u8, b[idx].u8);
             } else {
                 panic!();
