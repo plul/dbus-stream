@@ -110,12 +110,21 @@ impl Connection {
     /// DBus method call, with reply.
     pub async fn call_method_expect_reply(&mut self, message: &Message) -> crate::Result<()> {
         self.send_message(&message).await?;
-
         log::debug!("Reading");
-        let mut buf = [1; 1];
-        self.reader.read_exact(&mut buf).await?;
-        dbg!(buf);
+        self.read_header_and_body().await?;
+
         todo!("Complete this. Read and unmarshal the whole message");
+
+        Ok(())
+    }
+
+    async fn read_header_and_body(&mut self) -> crate::Result<()> {
+        // length of body is declared in header.
+        // length of header itself isn't actually known - must parse the header fields in a streaming fashion.
+        let mut buf = [0; 12];
+        self.reader.read_exact(&mut buf).await?;
+
+        dbg!(buf);
 
         Ok(())
     }

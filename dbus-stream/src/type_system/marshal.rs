@@ -20,7 +20,7 @@ impl Encoder {
     /// Push null bytes until aligned
     pub fn align(&mut self, alignment: usize) {
         debug_assert!(
-            [2, 4, 8].contains(&alignment),
+            [1, 2, 4, 8].contains(&alignment),
             "I don't expect I'll need this method for other alignments"
         );
 

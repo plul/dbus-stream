@@ -36,10 +36,10 @@ impl<'a> I<'a> {
     ) -> Result<I<'a>, nom::Err<nom::error::Error<I<'a>>>> {
         let mut i = self;
 
-        // Don't really expect to need this for other boundaries than 2, 4 and 8.
+        // Don't really expect to need to call this for other boundaries than 1, 2, 4 and 8.
         debug_assert!([1, 2, 4, 8].contains(&boundary), "Sanity check");
 
-        while i.alignment != 0 {
+        while i.alignment % boundary != 0 {
             i = skip_null_byte(i)?;
         }
 

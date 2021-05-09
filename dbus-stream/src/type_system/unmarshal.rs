@@ -1,4 +1,4 @@
-use std::iter::Iterator;
+use std::ops::Deref;
 
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -7,6 +7,7 @@ use nom::combinator::all_consuming;
 use nom::combinator::map_opt;
 use nom::combinator::map_res;
 use nom::combinator::value;
+use nom::combinator::map_parser;
 use nom::multi::many0;
 use nom::multi::many1;
 use nom::number::complete::be_f64;
@@ -271,94 +272,6 @@ impl DBusBoolean {
     }
 }
 
-// impl DBusArray {
-//     fn unmarshal_be<'a>(
-//         i: &'a [u8],
-//         item_type: &SingleCompleteTypeSignature,
-//     ) -> IResult<&'a [u8], Self> {
-//         let (mut i, length): (&[u8], u32) = be_u32(i)?;
-
-//         // If the element's size is greater than the size of the length
-//         // field, some padding is present.
-//         let size: usize = item_type.marshalling_boundary();
-//         if size > 4 {
-//             i = tag(vec![0; 4 % size].as_slice())(i)?.0;
-//         }
-
-//         let mut dba: Self = Self::new(item_type.clone());
-//         match item_type {
-//             SingleCompleteTypeSignature::DBusByte => {
-//                 for pos in 0..length as usize {
-//                     let (_, b) = DBusByte::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusBoolean => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusBoolean::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusInt16 => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusInt16::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusUint16 => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusUint16::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusInt32 => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusInt32::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusUint32 => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusUint32::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusInt64 => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusInt64::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusUint64 => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusUint64::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusDouble => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusDouble::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusString => {
-//                 for pos in (0..length as usize).step_by(size) {
-//                     let (_, b) = DBusString::unmarshal_be(&i[pos..])?;
-//                     dba.push(BasicType::from(b));
-//                 }
-//             }
-//             SingleCompleteTypeSignature::DBusObjectPath => todo!("Dani"),
-//             SingleCompleteTypeSignature::DBusSignature => todo!("Dani"),
-//             SingleCompleteTypeSignature::DBusUnixFileDescriptor => todo!("Dani"),
-//             SingleCompleteTypeSignature::DBusArray(_) => todo!("Dani"),
-//             SingleCompleteTypeSignature::DBusStruct { fields: _ } => todo!("Dani"),
-//             SingleCompleteTypeSignature::DBusVariant => todo!("Dani"),
-//             SingleCompleteTypeSignature::DBusDictEntry { key: _, value: _ } => todo!("Dani"),
-//         };
-
-//         Ok((i, dba))
-// }
-
 impl MessageType {
     fn unmarshal<'a>(i: I<'a>) -> IResult<I<'a>, Self> {
         todo!()
@@ -447,7 +360,17 @@ impl SingleCompleteTypeSignature {
                 }
             },
             Self::DBusArray(item_type) => {
-                todo!();
+                let i = i.advance_to_boundary(DBusArray::alignment())?;
+                let (i, length_of_array_data_in_bytes): (I, u32) = match endianness {
+                    Endianness::BigEndian => be_u32,
+                    Endianness::LittleEndian => le_u32,
+                }(i)?;
+                let i = i.advance_to_boundary(item_type.marshalling_boundary())?;
+                let (i, items): (I, Vec<Type>) = map_parser(take(length_of_array_data_in_bytes), all_consuming(many0(|i| item_type.unmarshal_inner(i, endianness))))(i)?;
+
+                let dbus_array = DBusArray { item_type: item_type.deref().clone(), items };
+
+                (i, Type::from(dbus_array))
             }
             Self::DBusStruct { fields } => {
                 todo!();
@@ -507,7 +430,7 @@ mod tests {
             DBusByte { u8: 17 },
         ];
 
-        let dba: DBusArray = match SingleCompleteTypeSignature::DBusByte.unmarshal(&a, Endianness::BigEndian).unwrap() {
+        let dba: DBusArray = match SingleCompleteTypeSignature::DBusArray(Box::new(SingleCompleteTypeSignature::DBusByte)).unmarshal(&a, Endianness::BigEndian).unwrap() {
             Type::Container(ContainerType::DBusArray(dbus_array)) => dbus_array,
             _ => panic!(),
         };
