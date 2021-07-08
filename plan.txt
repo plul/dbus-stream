@@ -1,0 +1,3 @@
+Rewrite header unmarshalling to be streaming (when unmarshalling header, the length of the header is not known ahead of time. The length of the body is indicated in the header.)
+
+in connection.rs::read_header_and_body unmarshall message (header and body) by using unmarshal.rs::unmarshal_message
